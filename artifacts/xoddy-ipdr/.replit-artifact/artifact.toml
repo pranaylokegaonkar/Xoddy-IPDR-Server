@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Xoddy IPDR Server"
+version = "1.0.0"
+id = "artifacts/xoddy-ipdr"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22592
+
+[services.development]
+run = "pnpm --filter @workspace/xoddy-ipdr run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/xoddy-ipdr", "run", "build" ]
+publicDir = "artifacts/xoddy-ipdr/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22592"
+BASE_PATH = "/"

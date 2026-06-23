@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Xoddy IPDR Server API - MikroTik Traffic Flow (NetFlow/IPFIX) collector
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Dashboard summaries and analytics
+  - name: users
+    description: System users and user types
+  - name: nas
+    description: NAS (Network Access Server) management
+  - name: flows
+    description: IPDR flow records search and export
+  - name: notifications
+    description: Notification and alerting system
+  - name: archives
+    description: Compressed flow record archives
 paths:
   /healthz:
     get:
@@ -24,7 +36,437 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Dashboard summary metrics
+      responses:
+        "200":
+          description: Summary metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /dashboard/flow-trend:
+    get:
+      operationId: getFlowTrend
+      tags: [dashboard]
+      summary: Flow volume trend over the last 24 hours
+      responses:
+        "200":
+          description: Trend points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlowTrendPoint"
+  /dashboard/top-nas:
+    get:
+      operationId: getTopNas
+      tags: [dashboard]
+      summary: Flow counts grouped by NAS
+      responses:
+        "200":
+          description: NAS flow counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NasFlowCount"
+  /dashboard/top-talkers:
+    get:
+      operationId: getTopTalkers
+      tags: [dashboard]
+      summary: Top source IP addresses by traffic volume
+      responses:
+        "200":
+          description: Top talkers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopTalker"
+
+  /user-types:
+    get:
+      operationId: getUserTypes
+      tags: [users]
+      summary: List available user types
+      responses:
+        "200":
+          description: User types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserType"
+  /users:
+    get:
+      operationId: getUsers
+      tags: [users]
+      summary: List system users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SystemUser"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a system user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemUser"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a system user
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemUser"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a system user
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemUser"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a system user
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /nas:
+    get:
+      operationId: getNasList
+      tags: [nas]
+      summary: List NAS devices
+      responses:
+        "200":
+          description: NAS devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Nas"
+    post:
+      operationId: createNas
+      tags: [nas]
+      summary: Add a NAS device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NasInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nas"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /nas/{id}:
+    get:
+      operationId: getNas
+      tags: [nas]
+      summary: Get a NAS device
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: NAS device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nas"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateNas
+      tags: [nas]
+      summary: Update a NAS device
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NasUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nas"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteNas
+      tags: [nas]
+      summary: Delete a NAS device
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /nas/{id}/status:
+    patch:
+      operationId: setNasStatus
+      tags: [nas]
+      summary: Enable or disable a NAS device
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NasStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nas"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /nas/{id}/config:
+    get:
+      operationId: getNasConfig
+      tags: [nas]
+      summary: Generate MikroTik traffic-flow sync configuration for a NAS
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Sync configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NasConfig"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /flows/search:
+    post:
+      operationId: searchFlows
+      tags: [flows]
+      summary: Search IPDR flow records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlowSearch"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowSearchResult"
+  /flows/export:
+    post:
+      operationId: exportFlows
+      tags: [flows]
+      summary: Export IPDR flow records as text or Excel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlowExport"
+      responses:
+        "200":
+          description: Exported file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Updated count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResult"
+
+  /archives:
+    get:
+      operationId: getArchives
+      tags: [archives]
+      summary: List compressed flow archives
+      responses:
+        "200":
+          description: Archives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FlowArchive"
+  /archives/compress:
+    post:
+      operationId: runCompression
+      tags: [archives]
+      summary: Run flow record compression now
+      responses:
+        "200":
+          description: Compression result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowArchive"
 components:
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +475,264 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    CountResult:
+      type: object
+      properties:
+        count:
+          type: integer
+      required:
+        - count
 
+    DashboardSummary:
+      type: object
+      required:
+        - totalFlows
+        - flowsToday
+        - totalNas
+        - activeNas
+        - inactiveNas
+        - totalBytes
+        - unreadNotifications
+        - archivedBatches
+        - collectorPort
+      properties:
+        totalFlows: { type: integer }
+        flowsToday: { type: integer }
+        totalNas: { type: integer }
+        activeNas: { type: integer }
+        inactiveNas: { type: integer }
+        totalBytes: { type: integer }
+        unreadNotifications: { type: integer }
+        archivedBatches: { type: integer }
+        collectorPort: { type: integer }
+        lastFlowAt: { type: ["string", "null"], format: date-time }
+    FlowTrendPoint:
+      type: object
+      required: [time, count, bytes]
+      properties:
+        time: { type: string }
+        count: { type: integer }
+        bytes: { type: integer }
+    NasFlowCount:
+      type: object
+      required: [nasId, nasName, count, bytes]
+      properties:
+        nasId: { type: integer }
+        nasName: { type: string }
+        count: { type: integer }
+        bytes: { type: integer }
+    TopTalker:
+      type: object
+      required: [ip, count, bytes]
+      properties:
+        ip: { type: string }
+        count: { type: integer }
+        bytes: { type: integer }
+
+    UserType:
+      type: object
+      required: [value, label, description]
+      properties:
+        value: { type: string }
+        label: { type: string }
+        description: { type: string }
+    SystemUser:
+      type: object
+      required: [id, username, fullName, userType, enabled, createdAt]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        fullName: { type: string }
+        email: { type: ["string", "null"] }
+        userType: { type: string, enum: [admin, operator, viewer] }
+        enabled: { type: boolean }
+        lastLoginAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    UserInput:
+      type: object
+      required: [username, fullName, userType, password]
+      properties:
+        username: { type: string, minLength: 1 }
+        fullName: { type: string, minLength: 1 }
+        email: { type: string }
+        userType: { type: string, enum: [admin, operator, viewer] }
+        password: { type: string, minLength: 4 }
+        enabled: { type: boolean }
+    UserUpdate:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 1 }
+        email: { type: string }
+        userType: { type: string, enum: [admin, operator, viewer] }
+        password: { type: string, minLength: 4 }
+        enabled: { type: boolean }
+
+    Nas:
+      type: object
+      required:
+        - id
+        - name
+        - ipAddress
+        - flowVersion
+        - enabled
+        - status
+        - flowCount
+        - createdAt
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        ipAddress: { type: string }
+        location: { type: ["string", "null"] }
+        description: { type: ["string", "null"] }
+        flowVersion: { type: string, enum: [v1, v5, v9, ipfix] }
+        enabled: { type: boolean }
+        status: { type: string, enum: [active, inactive, never] }
+        lastSeenAt: { type: ["string", "null"], format: date-time }
+        flowCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    NasInput:
+      type: object
+      required: [name, ipAddress, flowVersion]
+      properties:
+        name: { type: string, minLength: 1 }
+        ipAddress: { type: string, minLength: 1 }
+        location: { type: string }
+        description: { type: string }
+        flowVersion: { type: string, enum: [v1, v5, v9, ipfix] }
+        enabled: { type: boolean }
+    NasUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        ipAddress: { type: string, minLength: 1 }
+        location: { type: string }
+        description: { type: string }
+        flowVersion: { type: string, enum: [v1, v5, v9, ipfix] }
+        enabled: { type: boolean }
+    NasStatusUpdate:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+    NasConfig:
+      type: object
+      required: [nasId, nasName, flowVersion, collectorHost, collectorPort, commands, notes]
+      properties:
+        nasId: { type: integer }
+        nasName: { type: string }
+        flowVersion: { type: string }
+        collectorHost: { type: string }
+        collectorPort: { type: integer }
+        commands:
+          type: array
+          items: { type: string }
+        notes: { type: string }
+
+    FlowRecord:
+      type: object
+      required:
+        - id
+        - nasId
+        - nasName
+        - srcIp
+        - dstIp
+        - srcPort
+        - dstPort
+        - protocol
+        - protocolName
+        - bytes
+        - packets
+        - flowVersion
+        - startTime
+        - endTime
+        - flowDate
+      properties:
+        id: { type: integer }
+        nasId: { type: integer }
+        nasName: { type: string }
+        srcIp: { type: string }
+        dstIp: { type: string }
+        srcNatIp: { type: ["string", "null"] }
+        dstNatIp: { type: ["string", "null"] }
+        srcPort: { type: integer }
+        dstPort: { type: integer }
+        protocol: { type: integer }
+        protocolName: { type: string }
+        bytes: { type: integer }
+        packets: { type: integer }
+        flowVersion: { type: string }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        flowDate: { type: string }
+    FlowSearch:
+      type: object
+      properties:
+        srcIp: { type: string }
+        dstIp: { type: string }
+        srcNatIp: { type: string }
+        dstNatIp: { type: string }
+        nasId: { type: integer }
+        dateFrom: { type: string }
+        dateTo: { type: string }
+        startTime: { type: string }
+        endTime: { type: string }
+        page: { type: integer }
+        pageSize: { type: integer }
+    FlowSearchResult:
+      type: object
+      required: [records, total, page, pageSize]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowRecord"
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    FlowExport:
+      type: object
+      required: [format]
+      properties:
+        format: { type: string, enum: [text, excel] }
+        srcIp: { type: string }
+        dstIp: { type: string }
+        srcNatIp: { type: string }
+        dstNatIp: { type: string }
+        nasId: { type: integer }
+        dateFrom: { type: string }
+        dateTo: { type: string }
+        startTime: { type: string }
+        endTime: { type: string }
+
+    Notification:
+      type: object
+      required: [id, type, severity, title, message, read, createdAt]
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [no_records, nas_disabled, system] }
+        severity: { type: string, enum: [info, warning, critical] }
+        title: { type: string }
+        message: { type: string }
+        nasId: { type: ["integer", "null"] }
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    FlowArchive:
+      type: object
+      required: [id, fileName, recordCount, originalBytes, compressedBytes, periodStart, periodEnd, createdAt]
+      properties:
+        id: { type: integer }
+        fileName: { type: string }
+        recordCount: { type: integer }
+        originalBytes: { type: integer }
+        compressedBytes: { type: integer }
+        periodStart: { type: string, format: date-time }
+        periodEnd: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }

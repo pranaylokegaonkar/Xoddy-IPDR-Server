@@ -1,0 +1,2 @@
+- [NetFlow collector design](netflow-collector.md) — v9/IPFIX need a runtime template cache; flow times must come from exporter fields, not receipt time.
+- [Flow archive compression](flow-archive-compression.md) — gzip payload + archived-flag must be one transaction over a frozen row-id set, or payload and archived rows drift.
