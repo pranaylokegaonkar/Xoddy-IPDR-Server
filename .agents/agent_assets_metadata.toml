@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "stCjMKH9NPiILLbAehLPG"
+uri = "file://exports/Xoddy-IPDR-Server-Ubuntu-22.04-Install-Guide.pdf"
+type = "pdf"
+title = "Xoddy IPDR Server — Ubuntu 22.04 LTS Installation Guide"
