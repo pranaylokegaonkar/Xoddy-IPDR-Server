@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLogin, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { setToken } from "@/lib/token";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,10 @@ export default function Login() {
     login.mutate(
       { data: { username, password } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (data?.token) {
+            setToken(data.token);
+          }
           queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
         },
         onError: (err: any) => {

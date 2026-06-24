@@ -73,6 +73,8 @@ export interface CurrentUser {
   /** @nullable */
   email?: string | null;
   userType: CurrentUserUserType;
+  /** Bearer token (signed session id) returned by the login endpoint so clients can authenticate without the session cookie. Only present on the login response. */
+  token?: string;
 }
 
 export interface AuditLog {

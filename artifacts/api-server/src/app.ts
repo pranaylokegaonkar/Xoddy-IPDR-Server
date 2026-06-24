@@ -6,6 +6,7 @@ import pinoHttp from "pino-http";
 import { pool } from "@workspace/db";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { bearerSessionBridge } from "./lib/session";
 
 const app: Express = express();
 
@@ -58,6 +59,10 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Allow the session id to arrive via Authorization: Bearer (see session.ts).
+// Must run before the session middleware so the injected cookie is parsed.
+app.use(bearerSessionBridge);
 
 app.use(
   session({

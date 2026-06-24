@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLogout, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { setToken } from "@/lib/token";
 
 import {
   Sidebar,
@@ -38,6 +39,7 @@ export function AppSidebar() {
   const handleLogout = () => {
     logout.mutate(undefined, {
       onSettled: () => {
+        setToken(null);
         queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
       },
     });

@@ -632,6 +632,12 @@ components:
         fullName: { type: string }
         email: { type: ["string", "null"] }
         userType: { type: string, enum: [admin, operator, viewer] }
+        token:
+          type: string
+          description: >-
+            Bearer token (signed session id) returned by the login endpoint so
+            clients can authenticate without the session cookie. Only present on
+            the login response.
     AuditLog:
       type: object
       required: [id, username, action, createdAt]

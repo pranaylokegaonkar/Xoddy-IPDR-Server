@@ -4,6 +4,7 @@ import { db, systemUsersTable } from "@workspace/db";
 import { LoginBody } from "@workspace/api-zod";
 import { verifyPassword } from "../lib/password";
 import { recordAudit } from "../lib/audit";
+import { signSessionId } from "../lib/session";
 
 /** Public routes (no authentication required). */
 export const loginRouter: IRouter = Router();
@@ -61,7 +62,10 @@ loginRouter.post("/auth/login", async (req, res): Promise<void> => {
 
   await recordAudit(req, "auth.login", `${user.username} signed in`);
 
-  res.json(sessionUser);
+  // Also hand the client a bearer token (the signed session id) so it can
+  // authenticate without the session cookie — required inside the cross-site
+  // Replit preview iframe where browsers block third-party cookies.
+  res.json({ ...sessionUser, token: signSessionId(req.sessionID) });
 });
 
 sessionRouter.get("/auth/me", (req, res) => {

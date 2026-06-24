@@ -85,7 +85,8 @@ export const LoginResponse = zod.object({
   "username": zod.string(),
   "fullName": zod.string(),
   "email": zod.string().nullish(),
-  "userType": zod.enum(['admin', 'operator', 'viewer'])
+  "userType": zod.enum(['admin', 'operator', 'viewer']),
+  "token": zod.string().optional().describe('Bearer token (signed session id) returned by the login endpoint so clients can authenticate without the session cookie. Only present on the login response.')
 })
 
 
@@ -97,7 +98,8 @@ export const GetCurrentUserResponse = zod.object({
   "username": zod.string(),
   "fullName": zod.string(),
   "email": zod.string().nullish(),
-  "userType": zod.enum(['admin', 'operator', 'viewer'])
+  "userType": zod.enum(['admin', 'operator', 'viewer']),
+  "token": zod.string().optional().describe('Bearer token (signed session id) returned by the login endpoint so clients can authenticate without the session cookie. Only present on the login response.')
 })
 
 

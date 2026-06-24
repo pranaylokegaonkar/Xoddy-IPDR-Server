@@ -1,3 +1,4 @@
 - [NetFlow collector design](netflow-collector.md) — v9/IPFIX need a runtime template cache; flow times must come from exporter fields, not receipt time.
 - [Flow archive compression](flow-archive-compression.md) — gzip payload + archived-flag must be one transaction over a frozen row-id set, or payload and archived rows drift.
 - [connect-pg-simple session table](connect-pg-simple-session-table.md) — define `user_sessions` in Drizzle + push; never use `createTableIfMissing` (its table.sql is missing in the bundled dist).
+- [Cross-iframe cookie auth](cross-iframe-cookie-auth.md) — cookie-only login fails in the Replit preview iframe (3rd-party cookie blocking); accept the signed session id via Authorization: Bearer too.

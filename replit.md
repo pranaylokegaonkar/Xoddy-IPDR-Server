@@ -53,7 +53,7 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 - Search Flows: filter by Src/Dst IP, NAT IPs, date, NAS, and start/end time-of-day; export results as text or Excel.
 - Archives: list of compressed 2h batches with record counts and compression ratios.
 - Users & user types; Notifications including "no records generating" alerts.
-- Authentication: username/password login, PG-backed sessions (8h), and logout. The whole UI is gated behind login; a default admin is bootstrapped on first run if no users exist.
+- Authentication: username/password login, PG-backed sessions (8h), and logout. The whole UI is gated behind login; a default admin is bootstrapped on first run if no users exist. Auth works via either the session cookie OR an `Authorization: Bearer <token>` token (the signed session id, returned by login and stored in `localStorage`), so login works even inside the cross-site Replit preview iframe where browsers block third-party cookies.
 - System Log: audit trail of logins (incl. failed attempts), logouts, and user/NAS create-update-delete plus flow exports.
 
 ## User preferences
@@ -64,6 +64,7 @@ _None recorded yet._
 
 - v9/IPFIX records won't appear until the router has sent its template; the cache resets on server restart, so routers must re-send templates (MikroTik does this on `v9-template-refresh`/timeout).
 - All endpoints except `/api/healthz` and `/api/auth/login` require an authenticated session. The default bootstrap admin is `admin` / `admin` — sign in and change it immediately (or set `BOOTSTRAP_ADMIN_*` before first run).
+- Session auth accepts the session id via cookie OR `Authorization: Bearer <token>`. A pre-session middleware (`lib/session.ts` `bearerSessionBridge`) injects the bearer token as the session cookie before express-session parses the request, so the token must be the *signed* cookie value (`signSessionId` reproduces express-session's HMAC). This is what makes login work in the cross-site preview iframe; do not remove it.
 - The `user_sessions` table is defined in Drizzle and created by `pnpm --filter @workspace/db run push` — do NOT rely on connect-pg-simple's `createTableIfMissing` (it reads a `table.sql` that doesn't exist in the bundled `dist`).
 - Run `pnpm --filter @workspace/db run push` after editing any `lib/db/src/schema/` file.
 
