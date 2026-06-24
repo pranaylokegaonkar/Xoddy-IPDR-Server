@@ -32,8 +32,14 @@ export PORT="${PORT:-5000}"          # any value; only required so vite.config v
 export BASE_PATH="${BASE_PATH:-/}"   # the path the UI is served under by nginx
 export NODE_ENV=production
 
+# pnpm 11+ runs a dependency check before every `pnpm run` and treats "ignored
+# build scripts" (e.g. esbuild, which works fine via its prebuilt linux-x64
+# binary) as a FATAL error. Disable that pre-run check so the build steps run;
+# dependencies are still installed by the explicit `pnpm install` below.
+export npm_config_verify_deps_before_run=false
+
 # systemd unit running the API + UDP collector.
-API_SERVICE="${API_SERVICE:-xoddy-ipdr-api}"
+API_SERVICE="${API_SERVICE:-xoddy-ipdr}"
 # Reload nginx after rebuilding the web UI (1 = yes, 0 = no).
 RELOAD_NGINX="${RELOAD_NGINX:-1}"
 
