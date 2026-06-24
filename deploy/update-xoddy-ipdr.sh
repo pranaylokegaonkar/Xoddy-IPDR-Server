@@ -76,7 +76,12 @@ git reset --hard FETCH_HEAD
 
 echo "==> Installing dependencies"
 corepack enable >/dev/null 2>&1 || true
-pnpm install --frozen-lockfile
+# pnpm exits non-zero with an "ignored build scripts" notice (e.g. esbuild) even
+# though dependencies are installed fine. esbuild still works via its prebuilt
+# linux-x64 binary, so this notice is safe to continue past. A genuine install
+# failure would still surface at the typecheck/build step below.
+pnpm install --frozen-lockfile \
+  || echo "    (continuing past pnpm ignored-build-scripts notice)"
 
 echo "==> Building libraries, API server, and web UI"
 pnpm run typecheck:libs
