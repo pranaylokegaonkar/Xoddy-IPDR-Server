@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useGetArchives, getGetArchivesQueryKey, useRunCompression } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,28 @@ export default function Archives() {
   const { data: archives, isLoading } = useGetArchives({ query: { queryKey: getGetArchivesQueryKey() } });
   
   const runCompression = useRunCompression();
+
+  // Live countdown to the next IST 2-hour window boundary (when the current
+  // window closes and becomes eligible to be archived).
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+  const WINDOW_MS = 2 * 60 * 60 * 1000;
+  const nextBoundaryMs =
+    (Math.floor((nowMs + IST_OFFSET_MS) / WINDOW_MS) + 1) * WINDOW_MS - IST_OFFSET_MS;
+  const msToNext = Math.max(0, nextBoundaryMs - nowMs);
+  const formatCountdown = (ms: number) => {
+    const total = Math.floor(ms / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${h}h ${pad(m)}m ${pad(s)}s`;
+  };
 
   const handleRunCompression = () => {
     runCompression.mutate(undefined, {
@@ -47,7 +69,11 @@ export default function Archives() {
       <div className="flex items-center justify-between px-8 pt-8 pb-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-sans">Data Archives</h1>
-          <p className="text-muted-foreground text-sm mt-1">Compressed historical flow records (2-hour batches).</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Compressed historical flow records (2-hour IST batches). Current window closes in{" "}
+            <span className="font-mono font-medium text-foreground tabular-nums">{formatCountdown(msToNext)}</span>
+            {" "}(archived shortly after).
+          </p>
         </div>
         <Button onClick={handleRunCompression} disabled={runCompression.isPending}>
           <Zap className="size-4 mr-2" /> Compress Now
