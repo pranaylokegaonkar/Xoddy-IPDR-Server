@@ -68,7 +68,14 @@ router.post("/users", async (req, res): Promise<void> => {
     res.status(201).json(serializeUser(row!));
   } catch (err) {
     req.log.error({ err }, "Failed to create user");
-    res.status(400).json({ error: "Username already exists" });
+    const code = (err as { code?: string })?.code;
+    if (code === "23505") {
+      res.status(409).json({ error: "Username already exists" });
+      return;
+    }
+    const message =
+      err instanceof Error ? err.message : "Failed to create user";
+    res.status(500).json({ error: message });
   }
 });
 
