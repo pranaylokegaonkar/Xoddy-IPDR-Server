@@ -9,6 +9,12 @@
 export interface FlowArchive {
   id: number;
   fileName: string;
+  /** @nullable */
+  nasId: number | null;
+  /** @nullable */
+  nasName: string | null;
+  /** @nullable */
+  nasIp: string | null;
   recordCount: number;
   originalBytes: number;
   compressedBytes: number;

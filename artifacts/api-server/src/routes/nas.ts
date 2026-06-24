@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, inArray } from "drizzle-orm";
+import { and, eq, sql, inArray } from "drizzle-orm";
 import { db, nasDevicesTable, flowRecordsTable } from "@workspace/db";
 import {
   CreateNasBody,
@@ -218,6 +218,39 @@ router.get("/nas/:id/config", async (req, res): Promise<void> => {
     commands,
     notes,
   });
+});
+
+// Delete this NAS's current unarchived (not-yet-compressed) flow records.
+// Archived records are kept; only the live, uncompressed buffer is purged.
+router.delete("/nas/:id/flows", async (req, res): Promise<void> => {
+  const params = GetNasParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [nas] = await db
+    .select()
+    .from(nasDevicesTable)
+    .where(eq(nasDevicesTable.id, params.data.id));
+  if (!nas) {
+    res.status(404).json({ error: "NAS not found" });
+    return;
+  }
+  const deleted = await db
+    .delete(flowRecordsTable)
+    .where(
+      and(
+        eq(flowRecordsTable.nasId, params.data.id),
+        eq(flowRecordsTable.archived, 0),
+      ),
+    )
+    .returning({ id: flowRecordsTable.id });
+  await recordAudit(
+    req,
+    "nas.flows.delete",
+    `Deleted ${deleted.length} unarchived flow record(s) for NAS "${nas.name}" (${nas.ipAddress})`,
+  );
+  res.json({ deleted: deleted.length });
 });
 
 export default router;

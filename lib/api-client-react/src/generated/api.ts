@@ -26,6 +26,8 @@ import type {
   CountResult,
   CurrentUser,
   DashboardSummary,
+  DeleteArchivesInput,
+  DeleteResult,
   Error,
   FlowArchive,
   FlowExport,
@@ -1709,6 +1711,76 @@ export function useGetNasConfig<TData = Awaited<ReturnType<typeof getNasConfig>>
 
 
 
+export const getDeleteNasFlowsUrl = (id: number,) => {
+
+
+
+
+  return `/api/nas/${id}/flows`
+}
+
+/**
+ * @summary Delete a NAS device's unarchived flow records
+ */
+export const deleteNasFlows = async (id: number, options?: RequestInit): Promise<DeleteResult> => {
+
+  return customFetch<DeleteResult>(getDeleteNasFlowsUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteNasFlowsMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNasFlows>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteNasFlows>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteNasFlows'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteNasFlows>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteNasFlows(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteNasFlowsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteNasFlows>>>
+
+    export type DeleteNasFlowsMutationError = ErrorType<Error>
+
+    /**
+ * @summary Delete a NAS device's unarchived flow records
+ */
+export const useDeleteNasFlows = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNasFlows>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteNasFlows>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteNasFlowsMutationOptions(options));
+    }
+
 export const getSearchFlowsUrl = () => {
 
 
@@ -2291,4 +2363,145 @@ export function useGetCompressionStatus<TData = Awaited<ReturnType<typeof getCom
 
 
 
+
+export const getDeleteArchivesUrl = () => {
+
+
+
+
+  return `/api/archives/delete`
+}
+
+/**
+ * @summary Delete multiple archives by id
+ */
+export const deleteArchives = async (deleteArchivesInput: DeleteArchivesInput, options?: RequestInit): Promise<DeleteResult> => {
+
+  return customFetch<DeleteResult>(getDeleteArchivesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteArchivesInput,)
+  }
+);}
+
+
+
+
+export const getDeleteArchivesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArchives>>, TError,{data: BodyType<DeleteArchivesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteArchives>>, TError,{data: BodyType<DeleteArchivesInput>}, TContext> => {
+
+const mutationKey = ['deleteArchives'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteArchives>>, {data: BodyType<DeleteArchivesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteArchives(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteArchivesMutationResult = NonNullable<Awaited<ReturnType<typeof deleteArchives>>>
+    export type DeleteArchivesMutationBody = BodyType<DeleteArchivesInput>
+    export type DeleteArchivesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete multiple archives by id
+ */
+export const useDeleteArchives = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArchives>>, TError,{data: BodyType<DeleteArchivesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteArchives>>,
+        TError,
+        {data: BodyType<DeleteArchivesInput>},
+        TContext
+      > => {
+      return useMutation(getDeleteArchivesMutationOptions(options));
+    }
+
+export const getDeleteArchiveUrl = (id: number,) => {
+
+
+
+
+  return `/api/archives/${id}`
+}
+
+/**
+ * @summary Delete a single archive
+ */
+export const deleteArchive = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteArchiveUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteArchiveMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArchive>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteArchive>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteArchive'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteArchive>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteArchive(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteArchiveMutationResult = NonNullable<Awaited<ReturnType<typeof deleteArchive>>>
+
+    export type DeleteArchiveMutationError = ErrorType<Error>
+
+    /**
+ * @summary Delete a single archive
+ */
+export const useDeleteArchive = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArchive>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteArchive>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteArchiveMutationOptions(options));
+    }
 

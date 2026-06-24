@@ -5,15 +5,19 @@ import {
   useRunCompression,
   useGetCompressionStatus,
   getGetCompressionStatusQueryKey,
+  useDeleteArchive,
+  useDeleteArchives,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Archive as ArchiveIcon, FileArchive, Loader2, Zap } from "lucide-react";
+import { Archive as ArchiveIcon, FileArchive, Loader2, Zap, Download, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { getToken } from "@/lib/token";
 
 export default function Archives() {
   const queryClient = useQueryClient();
@@ -41,6 +45,84 @@ export default function Archives() {
   }, [status?.running, queryClient]);
 
   const runCompression = useRunCompression();
+  const deleteArchive = useDeleteArchive();
+  const deleteArchives = useDeleteArchives();
+
+  // Row selection for bulk delete.
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const toggleRow = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const allSelected = !!archives && archives.length > 0 && selected.size === archives.length;
+  const toggleAll = () => {
+    if (allSelected) setSelected(new Set());
+    else setSelected(new Set((archives ?? []).map((a) => a.id)));
+  };
+
+  const refreshArchives = () =>
+    queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() });
+
+  const handleDownload = async (archive: { id: number; fileName: string }) => {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/archives/${archive.id}/download`, {
+        headers: { Authorization: `Bearer ${getToken() ?? ""}` },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = archive.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast({ title: "Download Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteOne = (archive: { id: number; fileName: string }) => {
+    if (!confirm(`Delete archive "${archive.fileName}"?\n\nThis permanently removes the compressed file. This cannot be undone.`)) return;
+    deleteArchive.mutate(
+      { id: archive.id },
+      {
+        onSuccess: () => {
+          setSelected((prev) => {
+            const next = new Set(prev);
+            next.delete(archive.id);
+            return next;
+          });
+          refreshArchives();
+          toast({ title: "Archive deleted" });
+        },
+        onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleDeleteSelected = () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected archive(s)?\n\nThis permanently removes the compressed files. This cannot be undone.`)) return;
+    deleteArchives.mutate(
+      { data: { ids } },
+      {
+        onSuccess: (res) => {
+          setSelected(new Set());
+          refreshArchives();
+          toast({ title: "Archives deleted", description: `${res.deleted.toLocaleString()} archive(s) removed.` });
+        },
+        onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+      },
+    );
+  };
 
   // Live countdown to the next IST 2-hour window boundary (when the current
   // window closes and becomes eligible to be archived).
@@ -112,17 +194,33 @@ export default function Archives() {
             {" "}(archived shortly after).
           </p>
         </div>
-        <Button
-          onClick={handleRunCompression}
-          disabled={runCompression.isPending || status?.running}
-        >
-          {status?.running ? (
-            <Loader2 className="size-4 mr-2 animate-spin" />
-          ) : (
-            <Zap className="size-4 mr-2" />
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSelected}
+              disabled={deleteArchives.isPending}
+            >
+              {deleteArchives.isPending ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="size-4 mr-2" />
+              )}
+              Delete Selected ({selected.size})
+            </Button>
           )}
-          {status?.running ? "Compressing…" : "Compress Now"}
-        </Button>
+          <Button
+            onClick={handleRunCompression}
+            disabled={runCompression.isPending || status?.running}
+          >
+            {status?.running ? (
+              <Loader2 className="size-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="size-4 mr-2" />
+            )}
+            {status?.running ? "Compressing…" : "Compress Now"}
+          </Button>
+        </div>
       </div>
 
       {status?.running && (
@@ -178,21 +276,30 @@ export default function Archives() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all archives"
+                    />
+                  </TableHead>
                   <TableHead className="font-mono text-xs">File Name</TableHead>
+                  <TableHead className="font-mono text-xs">NAS</TableHead>
                   <TableHead className="font-mono text-xs">Period</TableHead>
                   <TableHead className="font-mono text-xs text-right">Records</TableHead>
                   <TableHead className="font-mono text-xs text-right">Original Size</TableHead>
                   <TableHead className="font-mono text-xs text-right">Compressed</TableHead>
                   <TableHead className="font-mono text-xs text-right">Ratio</TableHead>
                   <TableHead className="font-mono text-xs text-right">Archived At</TableHead>
+                  <TableHead className="font-mono text-xs text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="h-24 text-center">Loading...</TableCell></TableRow>
                 ) : archives?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center">
+                    <TableCell colSpan={10} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <FileArchive className="size-10 mb-2 opacity-20" />
                         <p>No archives generated yet</p>
@@ -202,10 +309,29 @@ export default function Archives() {
                   </TableRow>
                 ) : (
                   archives?.map((archive) => (
-                    <TableRow key={archive.id}>
-                      <TableCell className="font-medium font-mono text-xs text-primary flex items-center gap-2">
-                        <ArchiveIcon className="size-3" />
-                        {archive.fileName}
+                    <TableRow key={archive.id} data-state={selected.has(archive.id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(archive.id)}
+                          onCheckedChange={() => toggleRow(archive.id)}
+                          aria-label={`Select ${archive.fileName}`}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium font-mono text-xs text-primary">
+                        <span className="flex items-center gap-2">
+                          <ArchiveIcon className="size-3 shrink-0" />
+                          {archive.fileName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {archive.nasName ? (
+                          <span className="flex flex-col">
+                            <span className="font-medium">{archive.nasName}</span>
+                            {archive.nasIp && <span className="font-mono text-[10px] text-muted-foreground">{archive.nasIp}</span>}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">All</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         {format(parseISO(archive.periodStart), "HH:mm")} - {format(parseISO(archive.periodEnd), "HH:mm")}
@@ -220,6 +346,14 @@ export default function Archives() {
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
                         {format(parseISO(archive.createdAt), "MMM d, yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell className="text-right space-x-1 whitespace-nowrap">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleDownload(archive)} title="Download archive">
+                          <Download className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteOne(archive)} disabled={deleteArchive.isPending} title="Delete archive">
+                          <Trash2 className="size-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

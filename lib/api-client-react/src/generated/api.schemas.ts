@@ -366,12 +366,26 @@ export interface Notification {
 export interface FlowArchive {
   id: number;
   fileName: string;
+  /** @nullable */
+  nasId: number | null;
+  /** @nullable */
+  nasName: string | null;
+  /** @nullable */
+  nasIp: string | null;
   recordCount: number;
   originalBytes: number;
   compressedBytes: number;
   periodStart: string;
   periodEnd: string;
   createdAt: string;
+}
+
+export interface DeleteArchivesInput {
+  ids: number[];
+}
+
+export interface DeleteResult {
+  deleted: number;
 }
 
 export type GetAuditLogsParams = {

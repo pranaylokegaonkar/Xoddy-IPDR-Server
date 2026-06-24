@@ -99,6 +99,9 @@ export function serializeArchive(row: FlowArchiveRow) {
   return {
     id: row.id,
     fileName: row.fileName,
+    nasId: row.nasId,
+    nasName: row.nasName,
+    nasIp: row.nasIp,
     recordCount: row.recordCount,
     originalBytes: row.originalBytes,
     compressedBytes: row.compressedBytes,

@@ -375,6 +375,18 @@ export const GetNasConfigResponse = zod.object({
 
 
 /**
+ * @summary Delete a NAS device's unarchived flow records
+ */
+export const DeleteNasFlowsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteNasFlowsResponse = zod.object({
+  "deleted": zod.number()
+})
+
+
+/**
  * @summary Search IPDR flow records
  */
 export const SearchFlowsBody = zod.object({
@@ -483,6 +495,9 @@ export const MarkAllNotificationsReadResponse = zod.object({
 export const GetArchivesResponseItem = zod.object({
   "id": zod.number(),
   "fileName": zod.string(),
+  "nasId": zod.number().nullable(),
+  "nasName": zod.string().nullable(),
+  "nasIp": zod.string().nullable(),
   "recordCount": zod.number(),
   "originalBytes": zod.number(),
   "compressedBytes": zod.number(),
@@ -508,6 +523,26 @@ export const GetCompressionStatusResponse = zod.object({
   "elapsedSeconds": zod.number().nullish(),
   "etaSeconds": zod.number().nullish(),
   "lastError": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete multiple archives by id
+ */
+export const DeleteArchivesBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+export const DeleteArchivesResponse = zod.object({
+  "deleted": zod.number()
+})
+
+
+/**
+ * @summary Delete a single archive
+ */
+export const DeleteArchiveParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

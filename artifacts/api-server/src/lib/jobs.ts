@@ -33,6 +33,27 @@ function windowStartUtcMs(tsMs: number): number {
   return flooredIstMs - IST_OFFSET_MS;
 }
 
+// IST wall-clock date (YYYY-MM-DD) and time (HHMM) of a window boundary, used to
+// build human-readable per-NAS archive filenames that match the IST windows.
+function istDateTimeStamp(windowStartMs: number): { date: string; time: string } {
+  const iso = new Date(windowStartMs + IST_OFFSET_MS).toISOString();
+  return { date: iso.slice(0, 10), time: iso.slice(11, 16).replace(":", "") };
+}
+
+function sanitizeNasName(name: string): string {
+  return name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "nas";
+}
+
+// `<NasName>_<NasIp>_<YYYY-MM-DD>_<HHMM>IST.json.gz`
+function archiveFileName(
+  nasName: string,
+  nasIp: string,
+  windowStartMs: number,
+): string {
+  const { date, time } = istDateTimeStamp(windowStartMs);
+  return `${sanitizeNasName(nasName)}_${nasIp}_${date}_${time}IST.json.gz`;
+}
+
 export interface CompressionResult {
   fileName: string;
   recordCount: number;
@@ -194,6 +215,17 @@ async function compressBacklog(): Promise<CompressionResult[]> {
   // bound (earliest unarchived record) is captured on the first iteration.
   compressionProgress.backlogEndMs = currentWindowStart.getTime();
 
+  // NAS name/IP for filenames. Loaded once per run; a NAS added mid-run falls
+  // back to a synthetic name and is corrected on the next run.
+  const nasRows = await db
+    .select({
+      id: nasDevicesTable.id,
+      name: nasDevicesTable.name,
+      ipAddress: nasDevicesTable.ipAddress,
+    })
+    .from(nasDevicesTable);
+  const nasMap = new Map(nasRows.map((n) => [n.id, n]));
+
   // Process one fully-elapsed window per transaction, oldest first. This keeps a
   // large first-time backlog from (a) loading every unarchived record into
   // memory at once and (b) holding a single long-running transaction — either of
@@ -229,13 +261,12 @@ async function compressBacklog(): Promise<CompressionResult[]> {
     const periodStart = new Date(windowStartMs);
     const periodEnd = new Date(windowEndMs);
 
-    // Publish which window/file is being worked on right now.
-    const currentStamp = periodStart.toISOString().replace(/[:.]/g, "-");
-    compressionProgress.currentFileName = `ipdr-${currentStamp}.json.gz`;
+    // Publish which window is being worked on right now (per-file name is set as
+    // each NAS file within the window is compressed, below).
     compressionProgress.currentPeriodStartMs = windowStartMs;
     compressionProgress.currentPeriodEndMs = windowEndMs;
 
-    const result = await db.transaction(async (tx) => {
+    const windowResults = await db.transaction(async (tx) => {
       // Re-select the window's rows inside the transaction so the payload and the
       // rows we mark archived always match, even if new eligible rows arrive
       // concurrently. A late record that lands after this read stays unarchived
@@ -253,58 +284,83 @@ async function compressBacklog(): Promise<CompressionResult[]> {
 
       if (windowRows.length === 0) return null;
 
-      const ids = windowRows.map((r) => r.id);
-      const serialized = JSON.stringify(windowRows);
-      const originalBytes = Buffer.byteLength(serialized, "utf8");
-      const compressed = gzipSync(serialized);
-      const compressedBytes = compressed.length;
+      // One archive file per NAS within this window, so each file carries a
+      // single NAS's records under a filename with that NAS's name, IP and the
+      // window's IST date/time. All files + the archived flag still commit in
+      // this one transaction over the frozen row set.
+      const byNas = new Map<number, typeof windowRows>();
+      for (const r of windowRows) {
+        const arr = byNas.get(r.nasId);
+        if (arr) arr.push(r);
+        else byNas.set(r.nasId, [r]);
+      }
 
-      const stamp = periodStart.toISOString().replace(/[:.]/g, "-");
-      const fileName = `ipdr-${stamp}.json.gz`;
+      const created: CompressionResult[] = [];
+      const archivedIds: number[] = [];
 
-      const [archive] = await tx
-        .insert(flowArchivesTable)
-        .values({
-          fileName,
-          recordCount: windowRows.length,
-          originalBytes,
-          compressedBytes,
-          payload: compressed.toString("base64"),
-          periodStart,
-          periodEnd,
-        })
-        .returning();
+      for (const [nasId, rows] of byNas) {
+        const nas = nasMap.get(nasId);
+        const nasName = nas?.name ?? `nas-${nasId}`;
+        const nasIp = nas?.ipAddress ?? "unknown";
+        const fileName = archiveFileName(nasName, nasIp, windowStartMs);
+        compressionProgress.currentFileName = fileName;
+
+        const serialized = JSON.stringify(rows);
+        const originalBytes = Buffer.byteLength(serialized, "utf8");
+        const compressed = gzipSync(serialized);
+        const compressedBytes = compressed.length;
+
+        const [archive] = await tx
+          .insert(flowArchivesTable)
+          .values({
+            fileName,
+            nasId,
+            nasName,
+            nasIp,
+            recordCount: rows.length,
+            originalBytes,
+            compressedBytes,
+            payload: compressed.toString("base64"),
+            periodStart,
+            periodEnd,
+          })
+          .returning();
+
+        for (const r of rows) archivedIds.push(r.id);
+
+        logger.info(
+          { fileName, nasId, records: rows.length, compressedBytes },
+          "Compressed flow records",
+        );
+
+        created.push({
+          id: archive!.id,
+          fileName: archive!.fileName,
+          recordCount: archive!.recordCount,
+          originalBytes: archive!.originalBytes,
+          compressedBytes: archive!.compressedBytes,
+          periodStart: archive!.periodStart,
+          periodEnd: archive!.periodEnd,
+          createdAt: archive!.createdAt,
+        } satisfies CompressionResult);
+      }
 
       await tx
         .update(flowRecordsTable)
         .set({ archived: 1 })
-        .where(inArray(flowRecordsTable.id, ids));
+        .where(inArray(flowRecordsTable.id, archivedIds));
 
-      logger.info(
-        { fileName, records: windowRows.length, compressedBytes },
-        "Compressed flow records",
-      );
-
-      return {
-        id: archive!.id,
-        fileName: archive!.fileName,
-        recordCount: archive!.recordCount,
-        originalBytes: archive!.originalBytes,
-        compressedBytes: archive!.compressedBytes,
-        periodStart: archive!.periodStart,
-        periodEnd: archive!.periodEnd,
-        createdAt: archive!.createdAt,
-      } satisfies CompressionResult;
+      return created;
     });
 
     // Window emptied out between the scan and the transaction (a concurrent run
     // grabbed it). Stop here; any remaining work is picked up on the next run.
-    if (!result) break;
-    results.push(result);
+    if (!windowResults) break;
+    results.push(...windowResults);
 
     // Advance progress to the end of the window we just archived.
     compressionProgress.processedUptoMs = windowEndMs;
-    compressionProgress.completedCount += 1;
+    compressionProgress.completedCount += windowResults.length;
   }
 
   return results;

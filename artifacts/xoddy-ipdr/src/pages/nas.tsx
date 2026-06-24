@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { useGetNasList, getGetNasListQueryKey, useCreateNas, useUpdateNas, useDeleteNas, useSetNasStatus, useGetNasConfig, getGetNasConfigQueryKey } from "@workspace/api-client-react";
+import { useGetNasList, getGetNasListQueryKey, useCreateNas, useUpdateNas, useDeleteNas, useDeleteNasFlows, useSetNasStatus, useGetNasConfig, getGetNasConfigQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Server, Edit, Trash2, Code, Terminal, CheckCircle2, XCircle, Copy } from "lucide-react";
+import { Plus, Server, Edit, Trash2, Code, Terminal, CheckCircle2, XCircle, Copy, Eraser } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ export default function NasList() {
   
   const setStatus = useSetNasStatus();
   const deleteNas = useDeleteNas();
+  const deleteNasFlows = useDeleteNasFlows();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -56,6 +57,35 @@ export default function NasList() {
             toast({ title: "Error", description: err.message, variant: "destructive" });
           }
         }
+      );
+    }
+  };
+
+  const handleDeleteFlows = (nas: { id: number; name: string; flowCount: number }) => {
+    if (nas.flowCount === 0) {
+      toast({ title: "Nothing to delete", description: "This NAS has no unarchived flow records." });
+      return;
+    }
+    if (
+      confirm(
+        `Delete all unarchived flow records for "${nas.name}"?\n\n` +
+          `Already-archived (compressed) data is kept. This cannot be undone.`,
+      )
+    ) {
+      deleteNasFlows.mutate(
+        { id: nas.id },
+        {
+          onSuccess: (res) => {
+            queryClient.invalidateQueries({ queryKey: getGetNasListQueryKey() });
+            toast({
+              title: "Unarchived data deleted",
+              description: `${res.deleted.toLocaleString()} record(s) removed.`,
+            });
+          },
+          onError: (err: any) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+          },
+        },
       );
     }
   };
@@ -140,7 +170,10 @@ export default function NasList() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedNasId(nas.id); setIsFormOpen(true); }}>
                           <Edit className="size-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(nas.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleDeleteFlows(nas)} disabled={deleteNasFlows.isPending} title="Delete unarchived flow data">
+                          <Eraser className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(nas.id)} title="Delete NAS">
                           <Trash2 className="size-4" />
                         </Button>
                       </TableCell>

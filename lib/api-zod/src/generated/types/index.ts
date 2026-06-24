@@ -13,6 +13,8 @@ export * from './countResult';
 export * from './currentUser';
 export * from './currentUserUserType';
 export * from './dashboardSummary';
+export * from './deleteArchivesInput';
+export * from './deleteResult';
 export * from './error';
 export * from './flowArchive';
 export * from './flowExport';

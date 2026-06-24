@@ -428,6 +428,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /nas/{id}/flows:
+    delete:
+      operationId: deleteNasFlows
+      tags: [nas]
+      summary: Delete a NAS device's unarchived flow records
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Number of records deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /flows/search:
     post:
@@ -552,6 +572,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompressionStatus"
+  /archives/delete:
+    post:
+      operationId: deleteArchives
+      tags: [archives]
+      summary: Delete multiple archives by id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteArchivesInput"
+      responses:
+        "200":
+          description: Number of archives deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+  /archives/{id}:
+    delete:
+      operationId: deleteArchive
+      tags: [archives]
+      summary: Delete a single archive
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   parameters:
     IdParam:
@@ -902,13 +956,30 @@ components:
 
     FlowArchive:
       type: object
-      required: [id, fileName, recordCount, originalBytes, compressedBytes, periodStart, periodEnd, createdAt]
+      required: [id, fileName, nasId, nasName, nasIp, recordCount, originalBytes, compressedBytes, periodStart, periodEnd, createdAt]
       properties:
         id: { type: integer }
         fileName: { type: string }
+        nasId: { type: ["integer", "null"] }
+        nasName: { type: ["string", "null"] }
+        nasIp: { type: ["string", "null"] }
         recordCount: { type: integer }
         originalBytes: { type: integer }
         compressedBytes: { type: integer }
         periodStart: { type: string, format: date-time }
         periodEnd: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
+
+    DeleteArchivesInput:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items: { type: integer }
+
+    DeleteResult:
+      type: object
+      required: [deleted]
+      properties:
+        deleted: { type: integer }
