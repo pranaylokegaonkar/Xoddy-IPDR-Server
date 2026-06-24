@@ -15,13 +15,15 @@ router.get("/archives", async (_req, res) => {
 });
 
 router.post("/archives/compress", async (req, res): Promise<void> => {
-  const result = await runCompression();
-  if (!result) {
+  const results = await runCompression();
+  if (results.length === 0) {
     res.status(400).json({
-      error: "No flow records are old enough to compress yet.",
+      error: "No completed 2-hour windows are ready to compress yet.",
     });
     return;
   }
+  // One run can archive several elapsed windows; report the newest (last).
+  const result = results[results.length - 1]!;
   res.json({
     id: result.id,
     fileName: result.fileName,
