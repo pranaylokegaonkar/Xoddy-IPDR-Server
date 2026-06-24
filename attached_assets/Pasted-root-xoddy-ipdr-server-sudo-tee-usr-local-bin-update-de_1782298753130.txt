@@ -1,0 +1,59 @@
+root@xoddy-ipdr-server:~# sudo tee /usr/local/bin/update >/dev/null <<'UPDATE_EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-/opt/xoddy-ipdr}"
+BRANCH="${BRANCH:-main}"
+GH_USER="${GH_USER:-pranaylokegaonkar}"
+GH_TOKEN="${GH_TOKEN:-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}"
+GH_REPO="${GH_REPO:-github.com/pranaylokegaonkar/Xoddy-IPDR-Server.git}"
+export PORT="${PORT:-5000}"
+export BASE_PATH="${BASE_PATH:-/}"
+export NODE_ENV=production
+API_SERVICE="${API_SERVICE:-xoddy-ipdr-api}"
+RELOAD_NGINX="${RELOAD_NGINX:-1}"
+ENV_FILE="${ENV_FILE:-/etc/xoddy-ipdr/xoddy-ipdr.env}"
+
+APP_NAME="${1:-xoddy-ipdr}"
+if [[ "$APP_NAME" != "xoddy-ipdr" ]]; then
+  echo "Unknown app: '$APP_NAME'" >&2; exit 1
+fi
+
+if [[ -f "$ENV_FILE" ]]; then
+  echo "==> Loading environment from $ENV_FILE"
+  set -a; source "$ENV_FILE"; set +a
+fi
+
+if [[ "$GH_TOKEN" == "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" || -z "$GH_TOKEN" ]]; then
+  echo "ERROR: GH_TOKEN not set. Put it in $ENV_FILE." >&2; exit 1
+fi
+
+echo "==> Updating in $APP_DIR (branch: $BRANCH)"
+cd "$APP_DIR"
+git config --global --get-all safe.directory 2>/dev/null | grep -qx "$APP_DIR" \
+  || git config --global --add safe.directory "$APP_DIR"
+git fetch "https://${GH_USER}:${GH_TOKEN}@${GH_REPO}" "$BRANCH"
+git checkout "$BRANCH"
+git reset --hard FETCH_HEAD
+
+echo "==> Installing dependencies"
+corepack enable >/dev/null 2>&1 || true
+pnpm install --frozen-lockfile \
+  || echo "    (continuing past pnpm ignored-build-scripts notice)"
+
+echo "==> Building libraries, API server, and web UI"
+sudo chmod +x /usr/local/bin/updates up to date." systemctl reload nginx; fi
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~# sudo grep github_pat /usr/local/bin/update
+GH_TOKEN="${GH_TOKEN:-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}"
+if [[ "$GH_TOKEN" == "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" || -z "$GH_TOKEN" ]]; then
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~#
+root@xoddy-ipdr-server:~# sudo update xoddy-ipdr
+==> Loading environment from /etc/xoddy-ipdr/xoddy-ipdr.env
+ERROR: GH_TOKEN not set. Put it in /etc/xoddy-ipdr/xoddy-ipdr.env.
+root@xoddy-ipdr-server:~#
