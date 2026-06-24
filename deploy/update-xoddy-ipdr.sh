@@ -65,6 +65,10 @@ fi
 echo "==> Updating Xoddy IPDR Server in $APP_DIR (branch: $BRANCH)"
 cd "$APP_DIR"
 
+# The repo may be owned by a non-root user; allow root (sudo) to operate on it.
+git config --global --get-all safe.directory 2>/dev/null | grep -qx "$APP_DIR" \
+  || git config --global --add safe.directory "$APP_DIR"
+
 echo "==> Pulling latest code from GitHub (non-interactive)"
 git fetch "https://${GH_USER}:${GH_TOKEN}@${GH_REPO}" "$BRANCH"
 git checkout "$BRANCH"
