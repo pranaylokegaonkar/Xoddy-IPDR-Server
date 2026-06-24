@@ -5,6 +5,7 @@ import { SearchFlowsBody, ExportFlowsBody } from "@workspace/api-zod";
 import { serializeFlow } from "../lib/serializers";
 import { buildFlowFilters } from "../lib/flow-filters";
 import { buildText, buildExcel, type ExportRow } from "../lib/export";
+import { recordAudit } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -85,6 +86,12 @@ router.post("/flows/export", async (req, res): Promise<void> => {
     endTime: r.endTime,
     flowDate: r.flowDate,
   }));
+
+  await recordAudit(
+    req,
+    "flow.export",
+    `Exported ${exportRows.length} flow record(s) as ${body.format}`,
+  );
 
   if (body.format === "excel") {
     const buf = await buildExcel(exportRows);

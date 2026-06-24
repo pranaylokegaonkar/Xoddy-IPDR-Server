@@ -69,6 +69,60 @@ export const GetTopTalkersResponse = zod.array(GetTopTalkersResponseItem)
 
 
 /**
+ * @summary Authenticate and start a session
+ */
+
+
+
+
+export const LoginBody = zod.object({
+  "username": zod.string().min(1),
+  "password": zod.string().min(1)
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "userType": zod.enum(['admin', 'operator', 'viewer'])
+})
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentUserResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullish(),
+  "userType": zod.enum(['admin', 'operator', 'viewer'])
+})
+
+
+/**
+ * @summary List system activity / audit log entries
+ */
+export const GetAuditLogsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "action": zod.coerce.string().optional(),
+  "userId": zod.coerce.number().optional()
+})
+
+export const GetAuditLogsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number().nullish(),
+  "username": zod.string(),
+  "action": zod.string(),
+  "detail": zod.string().nullish(),
+  "ipAddress": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const GetAuditLogsResponse = zod.array(GetAuditLogsResponseItem)
+
+
+/**
  * @summary List available user types
  */
 export const GetUserTypesResponseItem = zod.object({

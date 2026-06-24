@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: dashboard
     description: Dashboard summaries and analytics
+  - name: auth
+    description: Authentication and sessions
+  - name: audit
+    description: System activity / audit log
   - name: users
     description: System users and user types
   - name: nas
@@ -92,6 +96,83 @@ paths:
                 items:
                   $ref: "#/components/schemas/TopTalker"
 
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Authenticate and start a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current session
+      responses:
+        "204":
+          description: Logged out
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /audit-logs:
+    get:
+      operationId: getAuditLogs
+      tags: [audit]
+      summary: List system activity / audit log entries
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: action
+          in: query
+          required: false
+          schema: { type: string }
+        - name: userId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
   /user-types:
     get:
       operationId: getUserTypes
@@ -536,6 +617,32 @@ components:
         count: { type: integer }
         bytes: { type: integer }
 
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 1 }
+        password: { type: string, minLength: 1 }
+    CurrentUser:
+      type: object
+      required: [id, username, fullName, userType]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        fullName: { type: string }
+        email: { type: ["string", "null"] }
+        userType: { type: string, enum: [admin, operator, viewer] }
+    AuditLog:
+      type: object
+      required: [id, username, action, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: ["integer", "null"] }
+        username: { type: string }
+        action: { type: string }
+        detail: { type: ["string", "null"] }
+        ipAddress: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
     UserType:
       type: object
       required: [value, label, description]

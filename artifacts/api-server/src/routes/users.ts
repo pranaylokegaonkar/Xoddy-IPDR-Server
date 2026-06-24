@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-zod";
 import { serializeUser } from "../lib/serializers";
 import { hashPassword } from "../lib/password";
+import { recordAudit } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -65,6 +66,11 @@ router.post("/users", async (req, res): Promise<void> => {
         enabled: body.enabled ?? true,
       })
       .returning();
+    await recordAudit(
+      req,
+      "user.create",
+      `Created user "${row!.username}" (${row!.userType})`,
+    );
     res.status(201).json(serializeUser(row!));
   } catch (err) {
     req.log.error({ err }, "Failed to create user");
@@ -137,6 +143,7 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "User not found" });
     return;
   }
+  await recordAudit(req, "user.update", `Updated user "${row.username}"`);
   res.json(serializeUser(row));
 });
 
@@ -154,6 +161,7 @@ router.delete("/users/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "User not found" });
     return;
   }
+  await recordAudit(req, "user.delete", `Deleted user "${row.username}"`);
   res.status(204).send();
 });
 

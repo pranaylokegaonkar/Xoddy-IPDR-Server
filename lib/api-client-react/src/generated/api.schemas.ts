@@ -50,6 +50,44 @@ export interface TopTalker {
   bytes: number;
 }
 
+export interface LoginInput {
+  /** @minLength 1 */
+  username: string;
+  /** @minLength 1 */
+  password: string;
+}
+
+export type CurrentUserUserType = typeof CurrentUserUserType[keyof typeof CurrentUserUserType];
+
+
+export const CurrentUserUserType = {
+  admin: 'admin',
+  operator: 'operator',
+  viewer: 'viewer',
+} as const;
+
+export interface CurrentUser {
+  id: number;
+  username: string;
+  fullName: string;
+  /** @nullable */
+  email?: string | null;
+  userType: CurrentUserUserType;
+}
+
+export interface AuditLog {
+  id: number;
+  /** @nullable */
+  userId?: number | null;
+  username: string;
+  action: string;
+  /** @nullable */
+  detail?: string | null;
+  /** @nullable */
+  ipAddress?: string | null;
+  createdAt: string;
+}
+
 export interface UserType {
   value: string;
   label: string;
@@ -314,4 +352,10 @@ export interface FlowArchive {
   periodEnd: string;
   createdAt: string;
 }
+
+export type GetAuditLogsParams = {
+limit?: number;
+action?: string;
+userId?: number;
+};
 

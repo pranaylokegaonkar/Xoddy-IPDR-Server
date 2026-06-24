@@ -10,11 +10,12 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL`
+- Required env: `DATABASE_URL`, `SESSION_SECRET` (signs session cookies; set a long random value in production)
 - Optional env:
   - `NETFLOW_PORT` (default `2055`) — UDP port the collector binds
   - `NETFLOW_HOST` (default `0.0.0.0`) — UDP bind address
   - `NETFLOW_PUBLIC_HOST` — the reachable host/IP advertised to routers in generated config commands (falls back to `REPLIT_DEV_DOMAIN`, then a `<collector-ip>` placeholder)
+  - `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` — override the default admin created on first run (defaults `admin` / `admin`)
 
 ## Stack
 
@@ -28,9 +29,10 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 
 ## Where things live
 
-- DB schema (source of truth): `lib/db/src/schema/` — `system-users`, `nas-devices`, `flow-records`, `notifications`, `flow-archives` (barrel `index.ts`)
+- DB schema (source of truth): `lib/db/src/schema/` — `system-users`, `nas-devices`, `flow-records`, `notifications`, `flow-archives`, `audit-logs`, `user-sessions` (barrel `index.ts`)
+- Auth: session middleware in `artifacts/api-server/src/app.ts` (express-session + connect-pg-simple, PG-backed `user_sessions`); routes `routes/auth.ts`; gate `middlewares/require-auth.ts`; bootstrap admin `lib/bootstrap.ts`; audit helper `lib/audit.ts`
 - API contract (source of truth): `lib/api-spec/openapi.yaml` → codegen into `@workspace/api-zod` and `@workspace/api-hooks`
-- Server routes: `artifacts/api-server/src/routes/` (dashboard, users, nas, flows, notifications, archives)
+- Server routes: `artifacts/api-server/src/routes/` (dashboard, users, nas, flows, notifications, archives, auth, audit)
 - Collector + parsers: `artifacts/api-server/src/lib/collector.ts`
 - Background jobs (compression, stale-NAS notify): `artifacts/api-server/src/lib/jobs.ts`
 - Query filtering: `artifacts/api-server/src/lib/flow-filters.ts`
@@ -51,6 +53,8 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 - Search Flows: filter by Src/Dst IP, NAT IPs, date, NAS, and start/end time-of-day; export results as text or Excel.
 - Archives: list of compressed 2h batches with record counts and compression ratios.
 - Users & user types; Notifications including "no records generating" alerts.
+- Authentication: username/password login, PG-backed sessions (8h), and logout. The whole UI is gated behind login; a default admin is bootstrapped on first run if no users exist.
+- System Log: audit trail of logins (incl. failed attempts), logouts, and user/NAS create-update-delete plus flow exports.
 
 ## User preferences
 
@@ -59,7 +63,8 @@ _None recorded yet._
 ## Gotchas
 
 - v9/IPFIX records won't appear until the router has sent its template; the cache resets on server restart, so routers must re-send templates (MikroTik does this on `v9-template-refresh`/timeout).
-- Endpoints are not authenticated — the system is intended to sit on a trusted/isolated network. Add auth before exposing publicly.
+- All endpoints except `/api/healthz` and `/api/auth/login` require an authenticated session. The default bootstrap admin is `admin` / `admin` — sign in and change it immediately (or set `BOOTSTRAP_ADMIN_*` before first run).
+- The `user_sessions` table is defined in Drizzle and created by `pnpm --filter @workspace/db run push` — do NOT rely on connect-pg-simple's `createTableIfMissing` (it reads a `table.sql` that doesn't exist in the bundled `dist`).
 - Run `pnpm --filter @workspace/db run push` after editing any `lib/db/src/schema/` file.
 
 ## Pointers

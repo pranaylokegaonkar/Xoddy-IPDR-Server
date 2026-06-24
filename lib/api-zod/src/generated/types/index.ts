@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './auditLog';
 export * from './countResult';
+export * from './currentUser';
+export * from './currentUserUserType';
 export * from './dashboardSummary';
 export * from './error';
 export * from './flowArchive';
@@ -16,7 +19,9 @@ export * from './flowRecord';
 export * from './flowSearch';
 export * from './flowSearchResult';
 export * from './flowTrendPoint';
+export * from './getAuditLogsParams';
 export * from './healthStatus';
+export * from './loginInput';
 export * from './nas';
 export * from './nasConfig';
 export * from './nasFlowCount';

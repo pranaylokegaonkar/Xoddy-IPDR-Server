@@ -4,6 +4,7 @@ import type {
   FlowRecordRow,
   NotificationRow,
   FlowArchiveRow,
+  AuditLogRow,
 } from "@workspace/db";
 import { protocolName } from "./protocols";
 
@@ -27,6 +28,18 @@ export function serializeUser(row: SystemUserRow) {
     userType: row.userType as "admin" | "operator" | "viewer",
     enabled: row.enabled,
     lastLoginAt: row.lastLoginAt ? row.lastLoginAt.toISOString() : null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export function serializeAuditLog(row: AuditLogRow) {
+  return {
+    id: row.id,
+    userId: row.userId,
+    username: row.username,
+    action: row.action,
+    detail: row.detail,
+    ipAddress: row.ipAddress,
     createdAt: row.createdAt.toISOString(),
   };
 }

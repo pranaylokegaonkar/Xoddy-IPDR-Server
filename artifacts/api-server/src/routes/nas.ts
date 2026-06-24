@@ -13,6 +13,7 @@ import {
 } from "@workspace/api-zod";
 import { serializeNas } from "../lib/serializers";
 import { collectorPort, advertisedHost } from "../lib/collector";
+import { recordAudit } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -78,6 +79,11 @@ router.post("/nas", async (req, res): Promise<void> => {
       enabled: body.enabled ?? true,
     })
     .returning();
+  await recordAudit(
+    req,
+    "nas.create",
+    `Added NAS "${row!.name}" (${row!.ipAddress})`,
+  );
   res.status(201).json(serializeNas(row!, 0));
 });
 
@@ -136,6 +142,7 @@ router.patch("/nas/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "NAS not found" });
     return;
   }
+  await recordAudit(req, "nas.update", `Updated NAS "${row.name}"`);
   const counts = await flowCountsByNas([row.id]);
   res.json(serializeNas(row, counts.get(row.id) ?? 0));
 });
@@ -154,6 +161,7 @@ router.delete("/nas/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "NAS not found" });
     return;
   }
+  await recordAudit(req, "nas.delete", `Deleted NAS "${row.name}"`);
   res.status(204).send();
 });
 
@@ -177,6 +185,11 @@ router.patch("/nas/:id/status", async (req, res): Promise<void> => {
     res.status(404).json({ error: "NAS not found" });
     return;
   }
+  await recordAudit(
+    req,
+    "nas.status",
+    `${parsed.data.enabled ? "Enabled" : "Disabled"} NAS "${row.name}"`,
+  );
   const counts = await flowCountsByNas([row.id]);
   res.json(serializeNas(row, counts.get(row.id) ?? 0));
 });

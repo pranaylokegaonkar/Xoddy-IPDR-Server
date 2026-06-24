@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { useHealthCheck } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLogout, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 
 import {
   Sidebar,
@@ -17,10 +18,30 @@ import {
   SidebarTrigger,
   useSidebar
 } from "@/components/ui/sidebar";
-import { Activity, Archive, Bell, LayoutDashboard, Search, Server, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Activity, Archive, Bell, LayoutDashboard, LogOut, ScrollText, Search, Server, Users } from "lucide-react";
+import { useCurrentUser } from "@/lib/auth";
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const queryClient = useQueryClient();
+  const user = useCurrentUser();
+  const logout = useLogout();
+
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
+      },
+    });
+  };
 
   const navItems = [
     { title: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -28,6 +49,7 @@ export function AppSidebar() {
     { title: "NAS Devices", href: "/nas", icon: Server },
     { title: "Archives", href: "/archives", icon: Archive },
     { title: "Users", href: "/users", icon: Users },
+    { title: "System Log", href: "/system-log", icon: ScrollText },
     { title: "Notifications", href: "/notifications", icon: Bell },
   ];
 
@@ -78,12 +100,22 @@ export function AppSidebar() {
       <SidebarFooter className="p-4 border-t border-sidebar-border/50">
         <div className="flex items-center gap-3">
           <div className="size-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground">
-            <span className="text-xs font-semibold">OP</span>
+            <span className="text-xs font-semibold">{initials(user.fullName || user.username)}</span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Operator</span>
-            <span className="text-xs text-sidebar-foreground/60">NOC Team</span>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-sm font-medium truncate">{user.fullName || user.username}</span>
+            <span className="text-xs text-sidebar-foreground/60 capitalize">{user.userType}</span>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+            onClick={handleLogout}
+            disabled={logout.isPending}
+            title="Sign out"
+          >
+            <LogOut className="size-4" />
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
