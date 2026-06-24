@@ -28,6 +28,7 @@ import type {
   DashboardSummary,
   DeleteArchivesInput,
   DeleteResult,
+  DeletionStarted,
   Error,
   FlowArchive,
   FlowExport,
@@ -40,6 +41,7 @@ import type {
   Nas,
   NasConfig,
   NasFlowCount,
+  NasFlowDeletionStatus,
   NasInput,
   NasStatusUpdate,
   NasUpdate,
@@ -1720,11 +1722,11 @@ export const getDeleteNasFlowsUrl = (id: number,) => {
 }
 
 /**
- * @summary Delete a NAS device's unarchived flow records
+ * @summary Start background deletion of a NAS device's unarchived flow records
  */
-export const deleteNasFlows = async (id: number, options?: RequestInit): Promise<DeleteResult> => {
+export const deleteNasFlows = async (id: number, options?: RequestInit): Promise<DeletionStarted> => {
 
-  return customFetch<DeleteResult>(getDeleteNasFlowsUrl(id),
+  return customFetch<DeletionStarted>(getDeleteNasFlowsUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -1768,7 +1770,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteNasFlowsMutationError = ErrorType<Error>
 
     /**
- * @summary Delete a NAS device's unarchived flow records
+ * @summary Start background deletion of a NAS device's unarchived flow records
  */
 export const useDeleteNasFlows = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNasFlows>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1780,6 +1782,83 @@ export const useDeleteNasFlows = <TError = ErrorType<Error>,
       > => {
       return useMutation(getDeleteNasFlowsMutationOptions(options));
     }
+
+export const getGetNasFlowDeletionStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/nas/${id}/flows/deletion-status`
+}
+
+/**
+ * @summary Live status of a NAS device's unarchived flow deletion
+ */
+export const getNasFlowDeletionStatus = async (id: number, options?: RequestInit): Promise<NasFlowDeletionStatus> => {
+
+  return customFetch<NasFlowDeletionStatus>(getGetNasFlowDeletionStatusUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNasFlowDeletionStatusQueryKey = (id: number,) => {
+    return [
+    `/api/nas/${id}/flows/deletion-status`
+    ] as const;
+    }
+
+
+export const getGetNasFlowDeletionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getNasFlowDeletionStatus>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNasFlowDeletionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNasFlowDeletionStatusQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNasFlowDeletionStatus>>> = ({ signal }) => getNasFlowDeletionStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNasFlowDeletionStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNasFlowDeletionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getNasFlowDeletionStatus>>>
+export type GetNasFlowDeletionStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live status of a NAS device's unarchived flow deletion
+ */
+
+export function useGetNasFlowDeletionStatus<TData = Awaited<ReturnType<typeof getNasFlowDeletionStatus>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNasFlowDeletionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNasFlowDeletionStatusQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getSearchFlowsUrl = () => {
 

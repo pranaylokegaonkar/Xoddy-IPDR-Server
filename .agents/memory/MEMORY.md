@@ -2,4 +2,5 @@
 - [Flow archive compression](flow-archive-compression.md) — gzip payload + archived-flag must be one transaction over a frozen row-id set, or payload and archived rows drift.
 - [connect-pg-simple session table](connect-pg-simple-session-table.md) — define `user_sessions` in Drizzle + push; never use `createTableIfMissing` (its table.sql is missing in the bundled dist).
 - [Cross-iframe cookie auth](cross-iframe-cookie-auth.md) — cookie-only login fails in the Replit preview iframe (3rd-party cookie blocking); accept the signed session id via Authorization: Bearer too.
+- [Bulk delete on a live-ingest table](bulk-delete-live-table.md) — background bulk deletes over a continuously-written table must snapshot an id cutoff at start, or they never terminate and silently destroy post-start records.
 - [Archive 2-hour windowing](archive-windowing.md) — archives bucket by fixed IST 2h clock windows (by end_time, half-open, 15-min grace); duplicate late-arrival archives are intentional (never drop IPDR records).

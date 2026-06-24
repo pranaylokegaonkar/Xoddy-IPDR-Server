@@ -14,6 +14,10 @@ import {
 import { serializeNas } from "../lib/serializers";
 import { collectorPort, advertisedHost } from "../lib/collector";
 import { recordAudit } from "../lib/audit";
+import {
+  startNasFlowDeletion,
+  getNasFlowDeletionStatus,
+} from "../lib/nas-flow-deletion";
 
 const router: IRouter = Router();
 
@@ -220,8 +224,12 @@ router.get("/nas/:id/config", async (req, res): Promise<void> => {
   });
 });
 
-// Delete this NAS's current unarchived (not-yet-compressed) flow records.
-// Archived records are kept; only the live, uncompressed buffer is purged.
+// Start a background deletion of this NAS's current unarchived (not-yet-compressed)
+// flow records. Archived records are kept; only the live, uncompressed buffer is
+// purged. This can be millions of rows, so it must NOT run synchronously: a large
+// DELETE can outlast the reverse-proxy request timeout and surface as a 504. The
+// handler validates, fires the background job, and responds 202; the client polls
+// /nas/:id/flows/deletion-status for live progress.
 router.delete("/nas/:id/flows", async (req, res): Promise<void> => {
   const params = GetNasParams.safeParse({ id: Number(req.params.id) });
   if (!params.success) {
@@ -236,21 +244,27 @@ router.delete("/nas/:id/flows", async (req, res): Promise<void> => {
     res.status(404).json({ error: "NAS not found" });
     return;
   }
-  const deleted = await db
-    .delete(flowRecordsTable)
-    .where(
-      and(
-        eq(flowRecordsTable.nasId, params.data.id),
-        eq(flowRecordsTable.archived, 0),
-      ),
-    )
-    .returning({ id: flowRecordsTable.id });
-  await recordAudit(
-    req,
-    "nas.flows.delete",
-    `Deleted ${deleted.length} unarchived flow record(s) for NAS "${nas.name}" (${nas.ipAddress})`,
-  );
-  res.json({ deleted: deleted.length });
+  const started = startNasFlowDeletion(nas.id, nas.name);
+  // Only audit when a new job actually began; a duplicate request while one is
+  // already running is a no-op and must not produce a misleading log entry.
+  if (started) {
+    await recordAudit(
+      req,
+      "nas.flows.delete",
+      `Started deletion of unarchived flow records for NAS "${nas.name}" (${nas.ipAddress})`,
+    );
+  }
+  res.status(202).json({ started });
+});
+
+// Live status of a NAS's unarchived-flow deletion (start time, counts, % done, ETA).
+router.get("/nas/:id/flows/deletion-status", (req, res): void => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  res.json(getNasFlowDeletionStatus(id));
 });
 
 export default router;

@@ -388,6 +388,23 @@ export interface DeleteResult {
   deleted: number;
 }
 
+export interface DeletionStarted {
+  started: boolean;
+}
+
+export interface NasFlowDeletionStatus {
+  nasId: number;
+  running: boolean;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  totalCount: number;
+  deletedCount: number;
+  progressPercent?: number | null;
+  elapsedSeconds?: number | null;
+  etaSeconds?: number | null;
+  lastError?: string | null;
+}
+
 export type GetAuditLogsParams = {
 limit?: number;
 action?: string;

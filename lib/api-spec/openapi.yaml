@@ -432,22 +432,36 @@ paths:
     delete:
       operationId: deleteNasFlows
       tags: [nas]
-      summary: Delete a NAS device's unarchived flow records
+      summary: Start background deletion of a NAS device's unarchived flow records
       parameters:
         - $ref: "#/components/parameters/IdParam"
       responses:
-        "200":
-          description: Number of records deleted
+        "202":
+          description: Deletion started; poll the deletion-status endpoint for progress
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeleteResult"
+                $ref: "#/components/schemas/DeletionStarted"
         "404":
           description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /nas/{id}/flows/deletion-status:
+    get:
+      operationId: getNasFlowDeletionStatus
+      tags: [nas]
+      summary: Live status of a NAS device's unarchived flow deletion
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Current deletion progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NasFlowDeletionStatus"
 
   /flows/search:
     post:
@@ -983,3 +997,38 @@ components:
       required: [deleted]
       properties:
         deleted: { type: integer }
+
+    DeletionStarted:
+      type: object
+      required: [started]
+      properties:
+        started: { type: boolean }
+
+    NasFlowDeletionStatus:
+      type: object
+      required: [nasId, running, totalCount, deletedCount]
+      properties:
+        nasId: { type: integer }
+        running: { type: boolean }
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        totalCount: { type: integer }
+        deletedCount: { type: integer }
+        progressPercent:
+          type: number
+          nullable: true
+        elapsedSeconds:
+          type: integer
+          nullable: true
+        etaSeconds:
+          type: integer
+          nullable: true
+        lastError:
+          type: string
+          nullable: true

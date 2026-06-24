@@ -375,14 +375,31 @@ export const GetNasConfigResponse = zod.object({
 
 
 /**
- * @summary Delete a NAS device's unarchived flow records
+ * @summary Start background deletion of a NAS device's unarchived flow records
  */
 export const DeleteNasFlowsParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const DeleteNasFlowsResponse = zod.object({
-  "deleted": zod.number()
+
+/**
+ * @summary Live status of a NAS device's unarchived flow deletion
+ */
+export const GetNasFlowDeletionStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetNasFlowDeletionStatusResponse = zod.object({
+  "nasId": zod.number(),
+  "running": zod.boolean(),
+  "startedAt": zod.coerce.date().nullish(),
+  "finishedAt": zod.coerce.date().nullish(),
+  "totalCount": zod.number(),
+  "deletedCount": zod.number(),
+  "progressPercent": zod.number().nullish(),
+  "elapsedSeconds": zod.number().nullish(),
+  "etaSeconds": zod.number().nullish(),
+  "lastError": zod.string().nullish()
 })
 
 

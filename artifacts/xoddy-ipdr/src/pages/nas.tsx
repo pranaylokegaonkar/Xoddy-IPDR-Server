@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { useGetNasList, getGetNasListQueryKey, useCreateNas, useUpdateNas, useDeleteNas, useDeleteNasFlows, useSetNasStatus, useGetNasConfig, getGetNasConfigQueryKey } from "@workspace/api-client-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useGetNasList, getGetNasListQueryKey, useCreateNas, useUpdateNas, useDeleteNas, useDeleteNasFlows, useSetNasStatus, useGetNasConfig, getGetNasConfigQueryKey, useGetNasFlowDeletionStatus, getGetNasFlowDeletionStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Server, Edit, Trash2, Code, Terminal, CheckCircle2, XCircle, Copy, Eraser } from "lucide-react";
+import { Plus, Server, Edit, Trash2, Code, Terminal, CheckCircle2, XCircle, Copy, Eraser, Loader2 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,52 @@ export default function NasList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [selectedNasId, setSelectedNasId] = useState<number | null>(null);
+
+  // Live status of an in-progress unarchived-flow deletion for one NAS. Poll fast
+  // while running, slow once done (the banner lingers briefly at 100%).
+  const [deletingNasId, setDeletingNasId] = useState<number | null>(null);
+  const { data: deletionStatus } = useGetNasFlowDeletionStatus(deletingNasId ?? 0, {
+    query: {
+      queryKey: getGetNasFlowDeletionStatusQueryKey(deletingNasId ?? 0),
+      enabled: deletingNasId != null,
+      refetchInterval: (query) =>
+        (query.state.data as { running?: boolean } | undefined)?.running ? 800 : 2000,
+    },
+  });
+
+  // Fire the completion toast + refresh exactly once when a run finishes.
+  const wasDeleting = useRef(false);
+  useEffect(() => {
+    if (deletingNasId == null || !deletionStatus) return;
+    if (wasDeleting.current && !deletionStatus.running) {
+      wasDeleting.current = false;
+      queryClient.invalidateQueries({ queryKey: getGetNasListQueryKey() });
+      if (deletionStatus.lastError) {
+        toast({ title: "Deletion failed", description: deletionStatus.lastError, variant: "destructive" });
+      } else {
+        toast({
+          title: "Unarchived data deleted",
+          description: `${deletionStatus.deletedCount.toLocaleString()} record(s) removed.`,
+        });
+      }
+      const t = setTimeout(() => setDeletingNasId(null), 2500);
+      return () => clearTimeout(t);
+    }
+    if (deletionStatus.running) wasDeleting.current = true;
+    return;
+  }, [deletionStatus, deletingNasId, queryClient, toast]);
+
+  const formatDuration = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+    if (m > 0) return `${m}m ${String(sec).padStart(2, "0")}s`;
+    return `${sec}s`;
+  };
+
+  const deletingNas = nasList?.find((n) => n.id === deletingNasId);
 
   const handleToggleStatus = (id: number, enabled: boolean) => {
     setStatus.mutate(
@@ -75,12 +121,12 @@ export default function NasList() {
       deleteNasFlows.mutate(
         { id: nas.id },
         {
-          onSuccess: (res) => {
-            queryClient.invalidateQueries({ queryKey: getGetNasListQueryKey() });
-            toast({
-              title: "Unarchived data deleted",
-              description: `${res.deleted.toLocaleString()} record(s) removed.`,
-            });
+          onSuccess: () => {
+            // Clear any stale cached status from a prior run of this NAS so the
+            // poller starts fresh, then begin polling for live progress.
+            queryClient.removeQueries({ queryKey: getGetNasFlowDeletionStatusQueryKey(nas.id) });
+            wasDeleting.current = true;
+            setDeletingNasId(nas.id);
           },
           onError: (err: any) => {
             toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -106,6 +152,54 @@ export default function NasList() {
           <Plus className="size-4 mr-2" /> Add NAS
         </Button>
       </div>
+
+      {deletingNasId != null && deletionStatus && (
+        <div className="px-8 pb-4">
+          <Card className="border-amber-500/30 bg-amber-500/5 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Loader2 className="size-4 text-amber-600 animate-spin shrink-0" />
+                  <span className="text-sm font-medium">
+                    {deletionStatus.running ? "Deleting unarchived data" : "Deletion complete"}
+                  </span>
+                  <span className="font-mono text-xs text-amber-700 truncate">
+                    {deletingNas?.name ?? `NAS #${deletingNasId}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
+                  <span>
+                    Started{" "}
+                    <span className="font-medium text-foreground">
+                      {deletionStatus.elapsedSeconds != null ? `${formatDuration(deletionStatus.elapsedSeconds)} ago` : "just now"}
+                    </span>
+                  </span>
+                  <span>
+                    Remaining{" "}
+                    <span className="font-medium text-foreground">
+                      {deletionStatus.etaSeconds != null ? `~${formatDuration(deletionStatus.etaSeconds)}` : (deletionStatus.running ? "estimating…" : "—")}
+                    </span>
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">{deletionStatus.deletedCount.toLocaleString()}</span>
+                    {" / "}
+                    {deletionStatus.totalCount.toLocaleString()} deleted
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {deletionStatus.progressPercent != null ? `${deletionStatus.progressPercent}%` : "0%"}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-amber-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(2, deletionStatus.progressPercent ?? 0))}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto px-8 pb-8">
         <Card className="shadow-sm border-border">
@@ -170,8 +264,8 @@ export default function NasList() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedNasId(nas.id); setIsFormOpen(true); }}>
                           <Edit className="size-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleDeleteFlows(nas)} disabled={deleteNasFlows.isPending} title="Delete unarchived flow data">
-                          <Eraser className="size-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleDeleteFlows(nas)} disabled={deleteNasFlows.isPending || deletingNasId === nas.id} title="Delete unarchived flow data">
+                          {deletingNasId === nas.id && deletionStatus?.running ? <Loader2 className="size-4 animate-spin" /> : <Eraser className="size-4" />}
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(nas.id)} title="Delete NAS">
                           <Trash2 className="size-4" />
