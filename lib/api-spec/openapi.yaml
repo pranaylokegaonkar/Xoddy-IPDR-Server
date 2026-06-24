@@ -534,12 +534,18 @@ paths:
       tags: [archives]
       summary: Run flow record compression now
       responses:
-        "200":
-          description: Compression result
+        "202":
+          description: Compression started in the background
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlowArchive"
+                $ref: "#/components/schemas/CompressionStarted"
+        "400":
+          description: Nothing is ready to compress yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   parameters:
     IdParam:
@@ -563,6 +569,16 @@ components:
           type: string
       required:
         - error
+    CompressionStarted:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+      required:
+        - status
+        - message
     CountResult:
       type: object
       properties:

@@ -13,6 +13,11 @@ export interface Error {
   error: string;
 }
 
+export interface CompressionStarted {
+  status: string;
+  message: string;
+}
+
 export interface CountResult {
   count: number;
 }

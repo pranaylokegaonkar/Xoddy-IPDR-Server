@@ -25,3 +25,18 @@ filename/window is cosmetic only.
 **How to apply:** if asked to "dedupe" archive windows or add uniqueness, push
 back — the duplicate is the safe behavior. If the windows must follow a different
 timezone, change `IST_OFFSET_MS` in `artifacts/api-server/src/lib/jobs.ts`.
+
+**Compression must scale to a huge first-time backlog; never compress it all in
+one request or one transaction.** This is self-hosted behind nginx (60s proxy
+timeout), and a collector that has never archived can have millions of unarchived
+rows. Three rules keep it safe — keep all three:
+- **Bound memory & lock time:** archive one window at a time (oldest-first), each
+  in its own transaction. Never select/serialize the whole backlog at once
+  (caused both an nginx 504 and OOM risk).
+- **Manual trigger is fire-and-forget:** the "compress now" endpoint must respond
+  immediately (after a cheap readiness check) and run the work in the background,
+  not block the HTTP request — the backlog can outlast any proxy timeout.
+- **Serialize runs in-process:** guard so a double-click or an overlap with the
+  scheduled job can't launch two concurrent backlog passes (duplicate work).
+**Why:** the originally-reported failure was a 504 from clicking "compress now"
+against a large backlog.

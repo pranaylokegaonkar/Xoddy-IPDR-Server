@@ -21,6 +21,7 @@ import type {
 
 import type {
   AuditLog,
+  CompressionStarted,
   CountResult,
   CurrentUser,
   DashboardSummary,
@@ -2154,9 +2155,9 @@ export const getRunCompressionUrl = () => {
 /**
  * @summary Run flow record compression now
  */
-export const runCompression = async ( options?: RequestInit): Promise<FlowArchive> => {
+export const runCompression = async ( options?: RequestInit): Promise<CompressionStarted> => {
 
-  return customFetch<FlowArchive>(getRunCompressionUrl(),
+  return customFetch<CompressionStarted>(getRunCompressionUrl(),
   {
     ...options,
     method: 'POST'
@@ -2168,7 +2169,7 @@ export const runCompression = async ( options?: RequestInit): Promise<FlowArchiv
 
 
 
-export const getRunCompressionMutationOptions = <TError = ErrorType<unknown>,
+export const getRunCompressionMutationOptions = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runCompression>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof runCompression>>, TError,void, TContext> => {
 
@@ -2197,12 +2198,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RunCompressionMutationResult = NonNullable<Awaited<ReturnType<typeof runCompression>>>
 
-    export type RunCompressionMutationError = ErrorType<unknown>
+    export type RunCompressionMutationError = ErrorType<Error>
 
     /**
  * @summary Run flow record compression now
  */
-export const useRunCompression = <TError = ErrorType<unknown>,
+export const useRunCompression = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runCompression>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof runCompression>>,

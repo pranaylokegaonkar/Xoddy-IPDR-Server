@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { desc } from "drizzle-orm";
 import { db, flowArchivesTable } from "@workspace/db";
 import { serializeArchive } from "../lib/serializers";
-import { runCompression } from "../lib/jobs";
+import { runCompression, hasReadyWindow } from "../lib/jobs";
 
 const router: IRouter = Router();
 
@@ -15,24 +15,27 @@ router.get("/archives", async (_req, res) => {
 });
 
 router.post("/archives/compress", async (req, res): Promise<void> => {
-  const results = await runCompression();
-  if (results.length === 0) {
+  // Reject early if nothing is ready, so the user still gets clear feedback.
+  if (!(await hasReadyWindow())) {
     res.status(400).json({
       error: "No completed 2-hour windows are ready to compress yet.",
     });
     return;
   }
-  // One run can archive several elapsed windows; report the newest (last).
-  const result = results[results.length - 1]!;
-  res.json({
-    id: result.id,
-    fileName: result.fileName,
-    recordCount: result.recordCount,
-    originalBytes: result.originalBytes,
-    compressedBytes: result.compressedBytes,
-    periodStart: result.periodStart.toISOString(),
-    periodEnd: result.periodEnd.toISOString(),
-    createdAt: result.createdAt.toISOString(),
+
+  // Run the compression in the background and respond immediately. A large
+  // first-time backlog can take far longer than the reverse-proxy request
+  // timeout, so we never block the HTTP request on it; new archives show up in
+  // the list as each window completes.
+  void runCompression()
+    .then((results) =>
+      req.log.info({ created: results.length }, "Manual compression run finished"),
+    )
+    .catch((err) => req.log.error({ err }, "Manual compression run failed"));
+
+  res.status(202).json({
+    status: "started",
+    message: "Compression started. New archives will appear as each window completes.",
   });
 });
 

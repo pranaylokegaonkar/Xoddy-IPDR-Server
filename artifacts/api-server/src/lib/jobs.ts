@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib";
-import { and, eq, lt, lte, isNotNull, inArray } from "drizzle-orm";
+import { and, eq, lt, lte, gte, isNotNull, inArray } from "drizzle-orm";
 import {
   db,
   flowRecordsTable,
@@ -49,49 +49,80 @@ export interface CompressionResult {
 // the window its end time falls into. The in-progress window is left untouched
 // until it completes. Returns every archive created (newest window last), or an
 // empty array when there is nothing to compress.
+let compressionRunning = false;
+
+// Public entry point: serialize compression runs within this process so an
+// impatient double-click on "Compress Now", or an overlap with the scheduled
+// 2h job, can't launch two heavy backlog passes at once (which would duplicate
+// archives and waste DB/CPU). Single service process, so an in-process flag is
+// sufficient.
 export async function runCompression(): Promise<CompressionResult[]> {
+  if (compressionRunning) {
+    logger.info("Compression already in progress; skipping overlapping run");
+    return [];
+  }
+  compressionRunning = true;
+  try {
+    return await compressBacklog();
+  } finally {
+    compressionRunning = false;
+  }
+}
+
+async function compressBacklog(): Promise<CompressionResult[]> {
   const now = Date.now();
   // Start of the current, still-in-progress window. Any record ending before
   // this belongs to a window that has fully elapsed and is safe to archive.
   const currentWindowStart = new Date(windowStartUtcMs(now));
+  const results: CompressionResult[] = [];
 
-  return db.transaction(async (tx) => {
-    const rows = await tx
-      .select()
+  // Process one fully-elapsed window per transaction, oldest first. This keeps a
+  // large first-time backlog from (a) loading every unarchived record into
+  // memory at once and (b) holding a single long-running transaction — either of
+  // which can exhaust memory or exceed a reverse-proxy timeout. Each window's
+  // payload + archived flag are still committed atomically over a frozen row set.
+  for (;;) {
+    const [earliest] = await db
+      .select({ endTime: flowRecordsTable.endTime })
       .from(flowRecordsTable)
       .where(
         and(
           eq(flowRecordsTable.archived, 0),
           lt(flowRecordsTable.endTime, currentWindowStart),
         ),
-      );
+      )
+      .orderBy(flowRecordsTable.endTime)
+      .limit(1);
 
-    if (rows.length === 0) return [];
+    if (!earliest) break;
 
-    // Bucket records by the IST window their end time falls into.
-    const buckets = new Map<number, typeof rows>();
-    for (const r of rows) {
-      const key = windowStartUtcMs(r.endTime.getTime());
-      const bucket = buckets.get(key);
-      if (bucket) bucket.push(r);
-      else buckets.set(key, [r]);
-    }
+    const windowStartMs = windowStartUtcMs(earliest.endTime.getTime());
+    const windowEndMs = windowStartMs + ARCHIVE_WINDOW_MS;
+    // The oldest remaining window is still inside its post-close grace, so every
+    // remaining (newer) window is too — nothing else is ready yet.
+    if (windowEndMs + ARCHIVE_GRACE_MS > now) break;
 
-    const results: CompressionResult[] = [];
+    const periodStart = new Date(windowStartMs);
+    const periodEnd = new Date(windowEndMs);
 
-    // Process windows in chronological order so the newest is returned last.
-    for (const windowStartMs of [...buckets.keys()].sort((a, b) => a - b)) {
-      const windowEndMs = windowStartMs + ARCHIVE_WINDOW_MS;
-      // Defer a just-closed window until late-trailing exports have had time to
-      // arrive, so we don't archive it twice.
-      if (windowEndMs + ARCHIVE_GRACE_MS > now) continue;
+    const result = await db.transaction(async (tx) => {
+      // Re-select the window's rows inside the transaction so the payload and the
+      // rows we mark archived always match, even if new eligible rows arrive
+      // concurrently. A late record that lands after this read stays unarchived
+      // and produces a second (harmless) archive on a later run — never dropped.
+      const windowRows = await tx
+        .select()
+        .from(flowRecordsTable)
+        .where(
+          and(
+            eq(flowRecordsTable.archived, 0),
+            gte(flowRecordsTable.endTime, periodStart),
+            lt(flowRecordsTable.endTime, periodEnd),
+          ),
+        );
 
-      const windowRows = buckets.get(windowStartMs)!;
-      const periodStart = new Date(windowStartMs);
-      const periodEnd = new Date(windowEndMs);
+      if (windowRows.length === 0) return null;
 
-      // Freeze the exact set of rows so the archive payload and the rows we mark
-      // archived always match, even if new eligible rows arrive concurrently.
       const ids = windowRows.map((r) => r.id);
       const serialized = JSON.stringify(windowRows);
       const originalBytes = Buffer.byteLength(serialized, "utf8");
@@ -124,7 +155,7 @@ export async function runCompression(): Promise<CompressionResult[]> {
         "Compressed flow records",
       );
 
-      results.push({
+      return {
         id: archive!.id,
         fileName: archive!.fileName,
         recordCount: archive!.recordCount,
@@ -133,11 +164,38 @@ export async function runCompression(): Promise<CompressionResult[]> {
         periodStart: archive!.periodStart,
         periodEnd: archive!.periodEnd,
         createdAt: archive!.createdAt,
-      });
-    }
+      } satisfies CompressionResult;
+    });
 
-    return results;
-  });
+    // Window emptied out between the scan and the transaction (a concurrent run
+    // grabbed it). Stop here; any remaining work is picked up on the next run.
+    if (!result) break;
+    results.push(result);
+  }
+
+  return results;
+}
+
+// Fast check used by the manual "compress now" trigger: is there at least one
+// fully-elapsed (past-grace) window with unarchived records ready to compress?
+export async function hasReadyWindow(): Promise<boolean> {
+  const now = Date.now();
+  const currentWindowStart = new Date(windowStartUtcMs(now));
+  const [earliest] = await db
+    .select({ endTime: flowRecordsTable.endTime })
+    .from(flowRecordsTable)
+    .where(
+      and(
+        eq(flowRecordsTable.archived, 0),
+        lt(flowRecordsTable.endTime, currentWindowStart),
+      ),
+    )
+    .orderBy(flowRecordsTable.endTime)
+    .limit(1);
+
+  if (!earliest) return false;
+  const windowEndMs = windowStartUtcMs(earliest.endTime.getTime()) + ARCHIVE_WINDOW_MS;
+  return windowEndMs + ARCHIVE_GRACE_MS <= now;
 }
 
 // Check each enabled NAS: if it has been seen before but has produced no

@@ -493,18 +493,3 @@ export const GetArchivesResponseItem = zod.object({
 export const GetArchivesResponse = zod.array(GetArchivesResponseItem)
 
 
-/**
- * @summary Run flow record compression now
- */
-export const RunCompressionResponse = zod.object({
-  "id": zod.number(),
-  "fileName": zod.string(),
-  "recordCount": zod.number(),
-  "originalBytes": zod.number(),
-  "compressedBytes": zod.number(),
-  "periodStart": zod.coerce.date(),
-  "periodEnd": zod.coerce.date(),
-  "createdAt": zod.coerce.date()
-})
-
-
