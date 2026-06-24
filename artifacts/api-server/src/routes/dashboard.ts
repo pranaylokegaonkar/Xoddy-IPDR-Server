@@ -81,30 +81,6 @@ router.get("/dashboard/flow-trend", async (_req, res) => {
   );
 });
 
-router.get("/dashboard/top-nas", async (_req, res) => {
-  const rows = await db
-    .select({
-      nasId: flowRecordsTable.nasId,
-      nasName: nasDevicesTable.name,
-      count: sql<number>`cast(count(*) as int)`,
-      bytes: sql<number>`coalesce(sum(${flowRecordsTable.bytes}), 0)`,
-    })
-    .from(flowRecordsTable)
-    .innerJoin(nasDevicesTable, eq(flowRecordsTable.nasId, nasDevicesTable.id))
-    .groupBy(flowRecordsTable.nasId, nasDevicesTable.name)
-    .orderBy(desc(sql`sum(${flowRecordsTable.bytes})`))
-    .limit(10);
-
-  res.json(
-    rows.map((r) => ({
-      nasId: r.nasId,
-      nasName: r.nasName,
-      count: r.count,
-      bytes: Number(r.bytes),
-    })),
-  );
-});
-
 router.get("/dashboard/top-talkers", async (_req, res) => {
   const rows = await db
     .select({
@@ -113,6 +89,7 @@ router.get("/dashboard/top-talkers", async (_req, res) => {
       bytes: sql<number>`coalesce(sum(${flowRecordsTable.bytes}), 0)`,
     })
     .from(flowRecordsTable)
+    .where(sql`${flowRecordsTable.startTime} >= now() - interval '24 hours'`)
     .groupBy(flowRecordsTable.srcIp)
     .orderBy(desc(sql`sum(${flowRecordsTable.bytes})`))
     .limit(10);

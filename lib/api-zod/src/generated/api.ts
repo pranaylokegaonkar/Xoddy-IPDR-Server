@@ -46,19 +46,7 @@ export const GetFlowTrendResponse = zod.array(GetFlowTrendResponseItem)
 
 
 /**
- * @summary Flow counts grouped by NAS
- */
-export const GetTopNasResponseItem = zod.object({
-  "nasId": zod.number(),
-  "nasName": zod.string(),
-  "count": zod.number(),
-  "bytes": zod.number()
-})
-export const GetTopNasResponse = zod.array(GetTopNasResponseItem)
-
-
-/**
- * @summary Top source IP addresses by traffic volume
+ * @summary Top source IP addresses by traffic volume (last 24 hours)
  */
 export const GetTopTalkersResponseItem = zod.object({
   "ip": zod.string(),

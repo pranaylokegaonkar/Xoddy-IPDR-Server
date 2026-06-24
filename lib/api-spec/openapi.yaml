@@ -67,25 +67,11 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/FlowTrendPoint"
-  /dashboard/top-nas:
-    get:
-      operationId: getTopNas
-      tags: [dashboard]
-      summary: Flow counts grouped by NAS
-      responses:
-        "200":
-          description: NAS flow counts
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/NasFlowCount"
   /dashboard/top-talkers:
     get:
       operationId: getTopTalkers
       tags: [dashboard]
-      summary: Top source IP addresses by traffic volume
+      summary: Top source IP addresses by traffic volume (last 24 hours)
       responses:
         "200":
           description: Top talkers
@@ -730,14 +716,6 @@ components:
       required: [time, count, bytes]
       properties:
         time: { type: string }
-        count: { type: integer }
-        bytes: { type: integer }
-    NasFlowCount:
-      type: object
-      required: [nasId, nasName, count, bytes]
-      properties:
-        nasId: { type: integer }
-        nasName: { type: string }
         count: { type: integer }
         bytes: { type: integer }
     TopTalker:

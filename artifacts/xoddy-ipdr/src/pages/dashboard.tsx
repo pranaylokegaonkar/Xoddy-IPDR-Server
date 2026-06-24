@@ -1,5 +1,5 @@
 import React from "react";
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopNas, getGetTopNasQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
-  const { data: topNas, isLoading: isLoadingNas } = useGetTopNas({ query: { queryKey: getGetTopNasQueryKey() } });
   const { data: topTalkers, isLoading: isLoadingTalkers } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
 
   const formatBytes = (bytes: number) => {
@@ -139,52 +138,8 @@ export default function Dashboard() {
 
           <Card className="shadow-sm border-border">
             <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
-              <CardTitle className="text-base font-semibold">Top NAS Devices</CardTitle>
-              <CardDescription>By traffic volume</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isLoadingNas ? (
-                <div className="p-4 space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : topNas && topNas.length > 0 ? (
-                <div className="divide-y divide-border">
-                  {topNas.map((nas, i) => (
-                    <div key={nas.nasId} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center size-6 rounded bg-primary/10 text-primary text-xs font-bold">
-                          {i + 1}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium leading-none">{nas.nasName}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{formatNumber(nas.count)} flows</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {formatBytes(nas.bytes)}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center text-muted-foreground text-sm">
-                  No NAS data available.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bottom row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           <Card className="shadow-sm border-border">
-            <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
               <CardTitle className="text-base font-semibold">Top Talkers (Source IP)</CardTitle>
-              <CardDescription>Highest bandwidth consumers</CardDescription>
+              <CardDescription>Highest bandwidth consumers (last 24h)</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {isLoadingTalkers ? (

@@ -40,7 +40,6 @@ import type {
   LoginInput,
   Nas,
   NasConfig,
-  NasFlowCount,
   NasFlowDeletionStatus,
   NasInput,
   NasStatusUpdate,
@@ -297,83 +296,6 @@ export function useGetFlowTrend<TData = Awaited<ReturnType<typeof getFlowTrend>>
 
 
 
-export const getGetTopNasUrl = () => {
-
-
-
-
-  return `/api/dashboard/top-nas`
-}
-
-/**
- * @summary Flow counts grouped by NAS
- */
-export const getTopNas = async ( options?: RequestInit): Promise<NasFlowCount[]> => {
-
-  return customFetch<NasFlowCount[]>(getGetTopNasUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetTopNasQueryKey = () => {
-    return [
-    `/api/dashboard/top-nas`
-    ] as const;
-    }
-
-
-export const getGetTopNasQueryOptions = <TData = Awaited<ReturnType<typeof getTopNas>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTopNas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetTopNasQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTopNas>>> = ({ signal }) => getTopNas({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTopNas>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetTopNasQueryResult = NonNullable<Awaited<ReturnType<typeof getTopNas>>>
-export type GetTopNasQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Flow counts grouped by NAS
- */
-
-export function useGetTopNas<TData = Awaited<ReturnType<typeof getTopNas>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTopNas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetTopNasQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-
 export const getGetTopTalkersUrl = () => {
 
 
@@ -383,7 +305,7 @@ export const getGetTopTalkersUrl = () => {
 }
 
 /**
- * @summary Top source IP addresses by traffic volume
+ * @summary Top source IP addresses by traffic volume (last 24 hours)
  */
 export const getTopTalkers = async ( options?: RequestInit): Promise<TopTalker[]> => {
 
@@ -430,7 +352,7 @@ export type GetTopTalkersQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Top source IP addresses by traffic volume
+ * @summary Top source IP addresses by traffic volume (last 24 hours)
  */
 
 export function useGetTopTalkers<TData = Awaited<ReturnType<typeof getTopTalkers>>, TError = ErrorType<unknown>>(

@@ -56,13 +56,6 @@ export interface FlowTrendPoint {
   bytes: number;
 }
 
-export interface NasFlowCount {
-  nasId: number;
-  nasName: string;
-  count: number;
-  bytes: number;
-}
-
 export interface TopTalker {
   ip: string;
   count: number;
