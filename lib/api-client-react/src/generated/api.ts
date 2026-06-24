@@ -2169,7 +2169,7 @@ export const runCompression = async ( options?: RequestInit): Promise<Compressio
 
 
 
-export const getRunCompressionMutationOptions = <TError = ErrorType<Error>,
+export const getRunCompressionMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runCompression>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof runCompression>>, TError,void, TContext> => {
 
@@ -2198,12 +2198,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RunCompressionMutationResult = NonNullable<Awaited<ReturnType<typeof runCompression>>>
 
-    export type RunCompressionMutationError = ErrorType<Error>
+    export type RunCompressionMutationError = ErrorType<unknown>
 
     /**
  * @summary Run flow record compression now
  */
-export const useRunCompression = <TError = ErrorType<Error>,
+export const useRunCompression = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runCompression>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof runCompression>>,

@@ -540,12 +540,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompressionStarted"
-        "400":
-          description: Nothing is ready to compress yet
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
 components:
   parameters:
     IdParam:

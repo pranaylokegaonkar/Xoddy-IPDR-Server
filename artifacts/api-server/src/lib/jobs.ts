@@ -176,28 +176,6 @@ async function compressBacklog(): Promise<CompressionResult[]> {
   return results;
 }
 
-// Fast check used by the manual "compress now" trigger: is there at least one
-// fully-elapsed (past-grace) window with unarchived records ready to compress?
-export async function hasReadyWindow(): Promise<boolean> {
-  const now = Date.now();
-  const currentWindowStart = new Date(windowStartUtcMs(now));
-  const [earliest] = await db
-    .select({ endTime: flowRecordsTable.endTime })
-    .from(flowRecordsTable)
-    .where(
-      and(
-        eq(flowRecordsTable.archived, 0),
-        lt(flowRecordsTable.endTime, currentWindowStart),
-      ),
-    )
-    .orderBy(flowRecordsTable.endTime)
-    .limit(1);
-
-  if (!earliest) return false;
-  const windowEndMs = windowStartUtcMs(earliest.endTime.getTime()) + ARCHIVE_WINDOW_MS;
-  return windowEndMs + ARCHIVE_GRACE_MS <= now;
-}
-
 // Check each enabled NAS: if it has been seen before but has produced no
 // records recently, raise a "no_records" notification (deduplicated).
 export async function checkRecordGeneration(): Promise<void> {
