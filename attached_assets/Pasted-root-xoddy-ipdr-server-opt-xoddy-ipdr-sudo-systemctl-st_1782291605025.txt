@@ -1,0 +1,113 @@
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# sudo systemctl status xoddy-ipdr --no-pager
+sudo journalctl -u xoddy-ipdr -n 60 --no-pager
+ls -la /opt/xoddy-ipdr/artifacts/api-server/dist/
+sudo ss -ltnp | grep 8080
+● xoddy-ipdr.service - Xoddy IPDR Server (API + NetFlow collector)
+     Loaded: loaded (/etc/systemd/system/xoddy-ipdr.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Wed 2026-06-24 08:59:11 UTC; 966ms ago
+    Process: 56253 ExecStart=/usr/bin/node --enable-source-maps artifacts/api-server/dist/index.mjs (code=exited, status=1/FAILURE)
+   Main PID: 56253 (code=exited, status=1/FAILURE)
+        CPU: 262ms
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]: node:internal/modules/cjs/loader:1503
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:   throw err;
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:   ^
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]: Error: Cannot find module '/opt/xoddy-ipdr/artifacts/api-server/dist/index.mjs'
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at Module._resolveFilename (node:internal/modules/cjs/loader:1500:15)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1116:12)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at Module._load (node:internal/modules/cjs/loader:1285:25)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:     at node:internal/main/run_main_module:33:47 {
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:   code: 'MODULE_NOT_FOUND',
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]:   requireStack: []
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]: }
+Jun 24 08:59:00 xoddy-ipdr-server node[56238]: Node.js v24.17.0
+Jun 24 08:59:00 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Main process exited, code=exited, status=1/FAILURE
+Jun 24 08:59:00 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Failed with result 'exit-code'.
+Jun 24 08:59:05 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Scheduled restart job, restart counter is at 72.
+Jun 24 08:59:05 xoddy-ipdr-server systemd[1]: Stopped Xoddy IPDR Server (API + NetFlow collector).
+Jun 24 08:59:05 xoddy-ipdr-server systemd[1]: Started Xoddy IPDR Server (API + NetFlow collector).
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]: node:internal/modules/cjs/loader:1503
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:   throw err;
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:   ^
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]: Error: Cannot find module '/opt/xoddy-ipdr/artifacts/api-server/dist/index.mjs'
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at Module._resolveFilename (node:internal/modules/cjs/loader:1500:15)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1116:12)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at Module._load (node:internal/modules/cjs/loader:1285:25)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:     at node:internal/main/run_main_module:33:47 {
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:   code: 'MODULE_NOT_FOUND',
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]:   requireStack: []
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]: }
+Jun 24 08:59:06 xoddy-ipdr-server node[56245]: Node.js v24.17.0
+Jun 24 08:59:06 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Main process exited, code=exited, status=1/FAILURE
+Jun 24 08:59:06 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Failed with result 'exit-code'.
+Jun 24 08:59:11 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Scheduled restart job, restart counter is at 73.
+Jun 24 08:59:11 xoddy-ipdr-server systemd[1]: Stopped Xoddy IPDR Server (API + NetFlow collector).
+Jun 24 08:59:11 xoddy-ipdr-server systemd[1]: Started Xoddy IPDR Server (API + NetFlow collector).
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]: node:internal/modules/cjs/loader:1503
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:   throw err;
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:   ^
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]: Error: Cannot find module '/opt/xoddy-ipdr/artifacts/api-server/dist/index.mjs'
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at Module._resolveFilename (node:internal/modules/cjs/loader:1500:15)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1116:12)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at Module._load (node:internal/modules/cjs/loader:1285:25)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:     at node:internal/main/run_main_module:33:47 {
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:   code: 'MODULE_NOT_FOUND',
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]:   requireStack: []
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]: }
+Jun 24 08:59:11 xoddy-ipdr-server node[56253]: Node.js v24.17.0
+Jun 24 08:59:11 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Main process exited, code=exited, status=1/FAILURE
+Jun 24 08:59:11 xoddy-ipdr-server systemd[1]: xoddy-ipdr.service: Failed with result 'exit-code'.
+ls: cannot access '/opt/xoddy-ipdr/artifacts/api-server/dist/': No such file or directory
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# cd /opt/xoddy-ipdr
+export BASE_PATH=/ PORT=8080
+pnpm run build
+ls -la artifacts/api-server/dist/index.mjs
+Scope: all 9 workspace projects
+✓ Lockfile passes supply-chain policies (verified 9m ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; e…
+└─ Done in 196ms
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+[ERROR] Command failed with exit code 1: /usr/bin/node /root/.cache/node/corepack/v1/pnpm/11.9.0/bin/pnpm.mjs install
+
+pnpm: Command failed with exit code 1: /usr/bin/node /root/.cache/node/corepack/v1/pnpm/11.9.0/bin/pnpm.mjs install
+    at getFinalError (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:34291:14)
+    at makeError (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:36598:21)
+    at getSyncResult (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:38442:10)
+    at spawnSubprocessSync (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:38402:14)
+    at execaCoreSync (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:38332:23)
+    at callBoundExeca (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:40860:23)
+    at boundExeca (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:40837:49)
+    at sync (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:40996:10)
+    at runPnpmCli (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:247126:5)
+    at runDepsStatusCheck (file:///root/.cache/node/corepack/v1/pnpm/11.9.0/dist/pnpm.mjs:248869:7)
+ls: cannot access 'artifacts/api-server/dist/index.mjs': No such file or directory
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# sudo chown -R www-data:www-data /opt/xoddy-ipdr
+sudo chmod o+x /opt
+sudo systemctl restart xoddy-ipdr
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# sudo cat /opt/xoddy-ipdr/.env | grep -E 'PORT|DATABASE_URL'
+PORT=8080
+DATABASE_URL=postgresql://xoddy:Xoddy@123@localhost:5432/xoddy_ipdr
+NETFLOW_PORT=2055
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
