@@ -51,6 +51,101 @@ export interface CompressionResult {
 // empty array when there is nothing to compress.
 let compressionRunning = false;
 
+// Live progress of the in-process compression run, surfaced to the UI so the
+// operator can see which window is being compressed and roughly how long the
+// backlog will take. Progress is measured by how far through the backlog's time
+// span we've advanced (empty windows are skipped instantly), not by window
+// count, so the ETA stays meaningful even with sparse data.
+interface CompressionProgressState {
+  running: boolean;
+  startedAtMs: number | null;
+  finishedAtMs: number | null;
+  // Time span of the backlog captured when the run starts.
+  backlogStartMs: number | null; // end_time of the earliest unarchived record
+  backlogEndMs: number | null; // start of the current (still-open) window
+  processedUptoMs: number | null; // end of the most recently archived window
+  completedCount: number;
+  currentFileName: string | null;
+  currentPeriodStartMs: number | null;
+  currentPeriodEndMs: number | null;
+  lastError: string | null;
+}
+
+const compressionProgress: CompressionProgressState = {
+  running: false,
+  startedAtMs: null,
+  finishedAtMs: null,
+  backlogStartMs: null,
+  backlogEndMs: null,
+  processedUptoMs: null,
+  completedCount: 0,
+  currentFileName: null,
+  currentPeriodStartMs: null,
+  currentPeriodEndMs: null,
+  lastError: null,
+};
+
+export interface CompressionStatus {
+  running: boolean;
+  startedAt: string | null;
+  finishedAt: string | null;
+  currentFileName: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  completedCount: number;
+  progressPercent: number | null;
+  elapsedSeconds: number | null;
+  etaSeconds: number | null;
+  lastError: string | null;
+}
+
+// Snapshot the current progress, computing elapsed/percent/ETA on read.
+export function getCompressionStatus(): CompressionStatus {
+  const p = compressionProgress;
+  const now = Date.now();
+
+  let progressPercent: number | null = null;
+  let etaSeconds: number | null = null;
+  let elapsedSeconds: number | null = null;
+
+  if (p.startedAtMs != null) {
+    const endRef = p.running ? now : (p.finishedAtMs ?? now);
+    elapsedSeconds = Math.max(0, Math.round((endRef - p.startedAtMs) / 1000));
+  }
+
+  if (
+    p.backlogStartMs != null &&
+    p.backlogEndMs != null &&
+    p.backlogEndMs > p.backlogStartMs
+  ) {
+    const processed = p.processedUptoMs ?? p.backlogStartMs;
+    const frac = Math.min(
+      1,
+      Math.max(0, (processed - p.backlogStartMs) / (p.backlogEndMs - p.backlogStartMs)),
+    );
+    progressPercent = Math.round(frac * 1000) / 10;
+    if (p.running && elapsedSeconds != null && frac > 0.005) {
+      etaSeconds = Math.max(0, Math.round((elapsedSeconds * (1 - frac)) / frac));
+    }
+  }
+
+  return {
+    running: p.running,
+    startedAt: p.startedAtMs != null ? new Date(p.startedAtMs).toISOString() : null,
+    finishedAt: p.finishedAtMs != null ? new Date(p.finishedAtMs).toISOString() : null,
+    currentFileName: p.currentFileName,
+    currentPeriodStart:
+      p.currentPeriodStartMs != null ? new Date(p.currentPeriodStartMs).toISOString() : null,
+    currentPeriodEnd:
+      p.currentPeriodEndMs != null ? new Date(p.currentPeriodEndMs).toISOString() : null,
+    completedCount: p.completedCount,
+    progressPercent,
+    elapsedSeconds,
+    etaSeconds,
+    lastError: p.lastError,
+  };
+}
+
 // Public entry point: serialize compression runs within this process so an
 // impatient double-click on "Compress Now", or an overlap with the scheduled
 // 2h job, can't launch two heavy backlog passes at once (which would duplicate
@@ -62,10 +157,30 @@ export async function runCompression(): Promise<CompressionResult[]> {
     return [];
   }
   compressionRunning = true;
+  // Reset progress for this run.
+  compressionProgress.running = true;
+  compressionProgress.startedAtMs = Date.now();
+  compressionProgress.finishedAtMs = null;
+  compressionProgress.backlogStartMs = null;
+  compressionProgress.backlogEndMs = null;
+  compressionProgress.processedUptoMs = null;
+  compressionProgress.completedCount = 0;
+  compressionProgress.currentFileName = null;
+  compressionProgress.currentPeriodStartMs = null;
+  compressionProgress.currentPeriodEndMs = null;
+  compressionProgress.lastError = null;
   try {
     return await compressBacklog();
+  } catch (err) {
+    compressionProgress.lastError = err instanceof Error ? err.message : String(err);
+    throw err;
   } finally {
     compressionRunning = false;
+    compressionProgress.running = false;
+    compressionProgress.finishedAtMs = Date.now();
+    compressionProgress.currentFileName = null;
+    compressionProgress.currentPeriodStartMs = null;
+    compressionProgress.currentPeriodEndMs = null;
   }
 }
 
@@ -75,6 +190,9 @@ async function compressBacklog(): Promise<CompressionResult[]> {
   // this belongs to a window that has fully elapsed and is safe to archive.
   const currentWindowStart = new Date(windowStartUtcMs(now));
   const results: CompressionResult[] = [];
+  // Upper bound of the backlog's time span for progress reporting; the lower
+  // bound (earliest unarchived record) is captured on the first iteration.
+  compressionProgress.backlogEndMs = currentWindowStart.getTime();
 
   // Process one fully-elapsed window per transaction, oldest first. This keeps a
   // large first-time backlog from (a) loading every unarchived record into
@@ -96,6 +214,12 @@ async function compressBacklog(): Promise<CompressionResult[]> {
 
     if (!earliest) break;
 
+    // Capture the backlog's lower bound the first time we find work, so the
+    // progress fraction has a stable denominator for the whole run.
+    if (compressionProgress.backlogStartMs == null) {
+      compressionProgress.backlogStartMs = earliest.endTime.getTime();
+    }
+
     const windowStartMs = windowStartUtcMs(earliest.endTime.getTime());
     const windowEndMs = windowStartMs + ARCHIVE_WINDOW_MS;
     // The oldest remaining window is still inside its post-close grace, so every
@@ -104,6 +228,12 @@ async function compressBacklog(): Promise<CompressionResult[]> {
 
     const periodStart = new Date(windowStartMs);
     const periodEnd = new Date(windowEndMs);
+
+    // Publish which window/file is being worked on right now.
+    const currentStamp = periodStart.toISOString().replace(/[:.]/g, "-");
+    compressionProgress.currentFileName = `ipdr-${currentStamp}.json.gz`;
+    compressionProgress.currentPeriodStartMs = windowStartMs;
+    compressionProgress.currentPeriodEndMs = windowEndMs;
 
     const result = await db.transaction(async (tx) => {
       // Re-select the window's rows inside the transaction so the payload and the
@@ -171,6 +301,10 @@ async function compressBacklog(): Promise<CompressionResult[]> {
     // grabbed it). Stop here; any remaining work is picked up on the next run.
     if (!result) break;
     results.push(result);
+
+    // Advance progress to the end of the window we just archived.
+    compressionProgress.processedUptoMs = windowEndMs;
+    compressionProgress.completedCount += 1;
   }
 
   return results;

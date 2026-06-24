@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { desc } from "drizzle-orm";
 import { db, flowArchivesTable } from "@workspace/db";
 import { serializeArchive } from "../lib/serializers";
-import { runCompression } from "../lib/jobs";
+import { runCompression, getCompressionStatus } from "../lib/jobs";
 
 const router: IRouter = Router();
 
@@ -31,6 +31,10 @@ router.post("/archives/compress", (req, res): void => {
     status: "started",
     message: "Compression started. New archives will appear as each window completes.",
   });
+});
+
+router.get("/archives/compress/status", (_req, res) => {
+  res.json(getCompressionStatus());
 });
 
 export default router;

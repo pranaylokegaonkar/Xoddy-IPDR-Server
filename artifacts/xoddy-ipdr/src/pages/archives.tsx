@@ -1,11 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { useGetArchives, getGetArchivesQueryKey, useRunCompression } from "@workspace/api-client-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  useGetArchives,
+  getGetArchivesQueryKey,
+  useRunCompression,
+  useGetCompressionStatus,
+  getGetCompressionStatusQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Archive as ArchiveIcon, FileArchive, Zap } from "lucide-react";
+import { Archive as ArchiveIcon, FileArchive, Loader2, Zap } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,7 +20,26 @@ export default function Archives() {
   const { toast } = useToast();
   
   const { data: archives, isLoading } = useGetArchives({ query: { queryKey: getGetArchivesQueryKey() } });
-  
+
+  // Live compression status. Poll fast while running, slow when idle so we still
+  // notice a scheduled (every-2h) run kicking off without the user clicking.
+  const { data: status } = useGetCompressionStatus({
+    query: {
+      queryKey: getGetCompressionStatusQueryKey(),
+      refetchInterval: (query) =>
+        (query.state.data as { running?: boolean } | undefined)?.running ? 1000 : 5000,
+    },
+  });
+
+  // When a run transitions running -> not running, refresh the archive list.
+  const wasRunning = useRef(false);
+  useEffect(() => {
+    if (wasRunning.current && status && !status.running) {
+      queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() });
+    }
+    wasRunning.current = !!status?.running;
+  }, [status?.running, queryClient]);
+
   const runCompression = useRunCompression();
 
   // Live countdown to the next IST 2-hour window boundary (when the current
@@ -39,10 +64,22 @@ export default function Archives() {
     return `${h}h ${pad(m)}m ${pad(s)}s`;
   };
 
+  // Compact duration for elapsed/remaining (e.g. "2h 05m", "3m 12s", "8s").
+  const formatDuration = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+    if (m > 0) return `${m}m ${String(sec).padStart(2, "0")}s`;
+    return `${sec}s`;
+  };
+
   const handleRunCompression = () => {
     runCompression.mutate(undefined, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetCompressionStatusQueryKey() });
         toast({ title: "Compression Started", description: "Background job has been triggered." });
       },
       onError: (err: any) => {
@@ -75,10 +112,65 @@ export default function Archives() {
             {" "}(archived shortly after).
           </p>
         </div>
-        <Button onClick={handleRunCompression} disabled={runCompression.isPending}>
-          <Zap className="size-4 mr-2" /> Compress Now
+        <Button
+          onClick={handleRunCompression}
+          disabled={runCompression.isPending || status?.running}
+        >
+          {status?.running ? (
+            <Loader2 className="size-4 mr-2 animate-spin" />
+          ) : (
+            <Zap className="size-4 mr-2" />
+          )}
+          {status?.running ? "Compressing…" : "Compress Now"}
         </Button>
       </div>
+
+      {status?.running && (
+        <div className="px-8 pb-4">
+          <Card className="border-primary/30 bg-primary/5 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Loader2 className="size-4 text-primary animate-spin shrink-0" />
+                  <span className="text-sm font-medium">Compressing</span>
+                  <span className="font-mono text-xs text-primary truncate">
+                    {status.currentFileName ?? "preparing…"}
+                  </span>
+                  {status.currentPeriodStart && status.currentPeriodEnd && (
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                      ({format(parseISO(status.currentPeriodStart), "MMM d HH:mm")} –{" "}
+                      {format(parseISO(status.currentPeriodEnd), "HH:mm")})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
+                  <span>
+                    Started{" "}
+                    <span className="font-medium text-foreground">
+                      {status.elapsedSeconds != null ? `${formatDuration(status.elapsedSeconds)} ago` : "just now"}
+                    </span>
+                  </span>
+                  <span>
+                    Remaining{" "}
+                    <span className="font-medium text-foreground">
+                      {status.etaSeconds != null ? `~${formatDuration(status.etaSeconds)}` : "estimating…"}
+                    </span>
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">{status.completedCount}</span> done
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(2, status.progressPercent ?? 0))}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto px-8 pb-8">
         <Card className="shadow-sm border-border">

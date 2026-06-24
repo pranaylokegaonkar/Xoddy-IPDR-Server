@@ -493,3 +493,21 @@ export const GetArchivesResponseItem = zod.object({
 export const GetArchivesResponse = zod.array(GetArchivesResponseItem)
 
 
+/**
+ * @summary Live status of the background compression run
+ */
+export const GetCompressionStatusResponse = zod.object({
+  "running": zod.boolean(),
+  "startedAt": zod.coerce.date().nullish(),
+  "finishedAt": zod.coerce.date().nullish(),
+  "currentFileName": zod.string().nullish(),
+  "currentPeriodStart": zod.coerce.date().nullish(),
+  "currentPeriodEnd": zod.coerce.date().nullish(),
+  "completedCount": zod.number(),
+  "progressPercent": zod.number().nullish(),
+  "elapsedSeconds": zod.number().nullish(),
+  "etaSeconds": zod.number().nullish(),
+  "lastError": zod.string().nullish()
+})
+
+

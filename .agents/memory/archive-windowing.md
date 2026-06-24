@@ -46,6 +46,13 @@ rows. Three rules keep it safe — keep all three:
 **Why:** the originally-reported failure was a 504 from clicking "compress now"
 against a large backlog.
 
+**Live progress:** the run exposes in-memory status (current window/file, ETA, %)
+via a status endpoint the UI polls. Progress is measured by how far through the
+backlog's *time span* (earliest unarchived end_time → current window start) the run
+has advanced, NOT by window count — so instantly-skipped empty windows still move
+the bar and the ETA stays meaningful with sparse data. State is process-local
+(matches the in-process run lock); a multi-instance deploy would need shared state.
+
 **Deploy reminder:** a 504 on "compress now" against the live server after a fix
 almost always means the API server code wasn't actually rebuilt+restarted (the
 new path returns 202 instantly, never 504). Schema/index changes also require a

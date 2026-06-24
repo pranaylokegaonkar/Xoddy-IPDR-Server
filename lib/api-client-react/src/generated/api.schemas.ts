@@ -18,6 +18,20 @@ export interface CompressionStarted {
   message: string;
 }
 
+export interface CompressionStatus {
+  running: boolean;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  currentFileName?: string | null;
+  currentPeriodStart?: string | null;
+  currentPeriodEnd?: string | null;
+  completedCount: number;
+  progressPercent?: number | null;
+  elapsedSeconds?: number | null;
+  etaSeconds?: number | null;
+  lastError?: string | null;
+}
+
 export interface CountResult {
   count: number;
 }

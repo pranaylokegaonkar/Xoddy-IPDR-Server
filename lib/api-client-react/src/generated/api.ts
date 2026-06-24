@@ -22,6 +22,7 @@ import type {
 import type {
   AuditLog,
   CompressionStarted,
+  CompressionStatus,
   CountResult,
   CurrentUser,
   DashboardSummary,
@@ -2213,4 +2214,81 @@ export const useRunCompression = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getRunCompressionMutationOptions(options));
     }
+
+export const getGetCompressionStatusUrl = () => {
+
+
+
+
+  return `/api/archives/compress/status`
+}
+
+/**
+ * @summary Live status of the background compression run
+ */
+export const getCompressionStatus = async ( options?: RequestInit): Promise<CompressionStatus> => {
+
+  return customFetch<CompressionStatus>(getGetCompressionStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCompressionStatusQueryKey = () => {
+    return [
+    `/api/archives/compress/status`
+    ] as const;
+    }
+
+
+export const getGetCompressionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCompressionStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCompressionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompressionStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompressionStatus>>> = ({ signal }) => getCompressionStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompressionStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCompressionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCompressionStatus>>>
+export type GetCompressionStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live status of the background compression run
+ */
+
+export function useGetCompressionStatus<TData = Awaited<ReturnType<typeof getCompressionStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCompressionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCompressionStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

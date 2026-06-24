@@ -52,7 +52,7 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 - Dashboard: 24h flow totals, data volume, active/inactive NAS, unread alerts, flow-volume trend, top NAS and top talkers.
 - NAS devices: add, enable/disable, sync, and generate copy-paste MikroTik `/ip traffic-flow` config per device (v1/v5/v9/IPFIX).
 - Search Flows: filter by Src/Dst IP, NAT IPs, date, NAS, and start/end time-of-day; export results as text or Excel.
-- Archives: list of compressed 2h batches with record counts and compression ratios.
+- Archives: list of compressed 2h batches with record counts and compression ratios, plus a live progress banner during a run (current file/window, elapsed, estimated remaining, % complete, windows done) polled from `GET /archives/compress/status`.
 - Users & user types; Notifications including "no records generating" alerts.
 - Authentication: username/password login, PG-backed sessions (8h), and logout. The whole UI is gated behind login; a default admin is bootstrapped on first run if no users exist. Auth works via either the session cookie OR an `Authorization: Bearer <token>` token (the signed session id, returned by login and stored in `localStorage`), so login works even inside the cross-site Replit preview iframe where browsers block third-party cookies.
 - System Log: audit trail of logins (incl. failed attempts), logouts, and user/NAS create-update-delete plus flow exports.

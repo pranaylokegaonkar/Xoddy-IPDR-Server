@@ -8,6 +8,7 @@
 
 export * from './auditLog';
 export * from './compressionStarted';
+export * from './compressionStatus';
 export * from './countResult';
 export * from './currentUser';
 export * from './currentUserUserType';

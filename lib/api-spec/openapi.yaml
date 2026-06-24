@@ -540,6 +540,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompressionStarted"
+  /archives/compress/status:
+    get:
+      operationId: getCompressionStatus
+      tags: [archives]
+      summary: Live status of the background compression run
+      responses:
+        "200":
+          description: Current compression progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompressionStatus"
 components:
   parameters:
     IdParam:
@@ -573,6 +585,47 @@ components:
       required:
         - status
         - message
+    CompressionStatus:
+      type: object
+      properties:
+        running:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        currentFileName:
+          type: string
+          nullable: true
+        currentPeriodStart:
+          type: string
+          format: date-time
+          nullable: true
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+        completedCount:
+          type: integer
+        progressPercent:
+          type: number
+          nullable: true
+        elapsedSeconds:
+          type: integer
+          nullable: true
+        etaSeconds:
+          type: integer
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
+      required:
+        - running
+        - completedCount
     CountResult:
       type: object
       properties:
