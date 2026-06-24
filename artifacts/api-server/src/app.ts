@@ -26,6 +26,16 @@ if (!sessionSecret) {
 
 const PgSession = connectPgSimple(session);
 
+// Inside the Replit preview the app is embedded in a cross-site iframe served
+// over HTTPS, so the session cookie must be SameSite=None + Secure to be
+// stored at all. On a plain-HTTP self-hosted deployment (accessed as a
+// top-level page) we keep SameSite=Lax + insecure so the cookie works without
+// TLS. `SESSION_COOKIE_SECURE=true` can force the secure variant if you put the
+// self-hosted server behind HTTPS later.
+const onReplit = !!process.env.REPLIT_DEV_DOMAIN || !!process.env.REPLIT_DOMAINS;
+const secureCookie =
+  process.env.SESSION_COOKIE_SECURE === "true" ? true : onReplit;
+
 app.use(
   pinoHttp({
     logger,
@@ -62,8 +72,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      sameSite: secureCookie ? "none" : "lax",
+      secure: secureCookie,
       maxAge: 1000 * 60 * 60 * 8,
     },
   }),
