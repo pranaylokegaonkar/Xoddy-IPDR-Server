@@ -38,5 +38,15 @@ rows. Three rules keep it safe — keep all three:
   not block the HTTP request — the backlog can outlast any proxy timeout.
 - **Serialize runs in-process:** guard so a double-click or an overlap with the
   scheduled job can't launch two concurrent backlog passes (duplicate work).
+- **Index the compression access path:** `flow_records` needs a composite index
+  on `(archived, end_time)`. The table was only indexed on its search dimensions
+  (nas, date, src/dst ip), so the "earliest unarchived record" and per-window
+  selects full-scanned it — on a large backlog that alone can blow the proxy
+  timeout, even after the work is backgrounded.
 **Why:** the originally-reported failure was a 504 from clicking "compress now"
 against a large backlog.
+
+**Deploy reminder:** a 504 on "compress now" against the live server after a fix
+almost always means the API server code wasn't actually rebuilt+restarted (the
+new path returns 202 instantly, never 504). Schema/index changes also require a
+`drizzle-kit push` against the *real* live DB, not just a code redeploy.

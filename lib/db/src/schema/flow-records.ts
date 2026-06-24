@@ -37,6 +37,10 @@ export const flowRecordsTable = pgTable(
     index("flow_records_date_idx").on(t.flowDate),
     index("flow_records_src_idx").on(t.srcIp),
     index("flow_records_dst_idx").on(t.dstIp),
+    // Drives the compression queries: find the earliest unarchived record and
+    // select a window's unarchived rows by end_time. Without this, every
+    // compression run full-scans flow_records.
+    index("flow_records_archived_end_idx").on(t.archived, t.endTime),
   ],
 );
 
