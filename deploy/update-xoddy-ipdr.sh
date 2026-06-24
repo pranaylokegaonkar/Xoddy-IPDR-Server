@@ -15,8 +15,9 @@ set -euo pipefail
 # ===========================================================================
 
 # Where the repository is cloned on the server, and which branch to deploy.
-APP_DIR="/opt/xoddy-ipdr"
-BRANCH="main"
+# Both can also be set in the env file (see ENV_FILE below).
+APP_DIR="${APP_DIR:-/opt/xoddy-ipdr}"
+BRANCH="${BRANCH:-main}"
 
 # --- GitHub credentials (used for a non-interactive pull, no prompts) -------
 # GH_TOKEN must be a GitHub Personal Access Token with "repo" scope.
