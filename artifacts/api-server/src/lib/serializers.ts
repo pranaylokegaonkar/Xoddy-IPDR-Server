@@ -5,6 +5,7 @@ import type {
   NotificationRow,
   FlowArchiveRow,
   AuditLogRow,
+  ArchiveLogRow,
 } from "@workspace/db";
 import { protocolName } from "./protocols";
 
@@ -40,6 +41,17 @@ export function serializeAuditLog(row: AuditLogRow) {
     action: row.action,
     detail: row.detail,
     ipAddress: row.ipAddress,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export function serializeArchiveLog(row: ArchiveLogRow) {
+  return {
+    id: row.id,
+    level: row.level as "info" | "warning" | "error",
+    event: row.event,
+    message: row.message,
+    detail: row.detail,
     createdAt: row.createdAt.toISOString(),
   };
 }

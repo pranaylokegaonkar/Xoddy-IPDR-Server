@@ -7,7 +7,8 @@
  */
 
 export type GetAuditLogsParams = {
-limit?: number;
+page?: number;
+pageSize?: number;
 action?: string;
 userId?: number;
 };

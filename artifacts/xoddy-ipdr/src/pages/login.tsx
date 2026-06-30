@@ -25,6 +25,11 @@ export default function Login() {
           if (data?.token) {
             setToken(data.token);
           }
+          // Always land on the Dashboard after signing in, regardless of which
+          // URL the user was on when the session expired. The router mounts
+          // fresh once the user query resolves, so it reads this path on mount.
+          const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+          window.history.replaceState(null, "", base || "/");
           queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
         },
         onError: (err: any) => {

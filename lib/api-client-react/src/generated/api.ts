@@ -21,7 +21,8 @@ import type {
 
 import type {
   AllFlowDeletionStatus,
-  AuditLog,
+  ArchiveLogPage,
+  AuditLogPage,
   CompressionStarted,
   CompressionStatus,
   CountResult,
@@ -36,6 +37,7 @@ import type {
   FlowSearch,
   FlowSearchResult,
   FlowTrendPoint,
+  GetArchiveLogsParams,
   GetAuditLogsParams,
   HealthStatus,
   LoginInput,
@@ -688,9 +690,9 @@ export const getGetAuditLogsUrl = (params?: GetAuditLogsParams,) => {
 /**
  * @summary List system activity / audit log entries
  */
-export const getAuditLogs = async (params?: GetAuditLogsParams, options?: RequestInit): Promise<AuditLog[]> => {
+export const getAuditLogs = async (params?: GetAuditLogsParams, options?: RequestInit): Promise<AuditLogPage> => {
 
-  return customFetch<AuditLog[]>(getGetAuditLogsUrl(params),
+  return customFetch<AuditLogPage>(getGetAuditLogsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -742,6 +744,90 @@ export function useGetAuditLogs<TData = Awaited<ReturnType<typeof getAuditLogs>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAuditLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetArchiveLogsUrl = (params?: GetArchiveLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/archive-logs?${stringifiedParams}` : `/api/archive-logs`
+}
+
+/**
+ * @summary List archive / compression activity log entries
+ */
+export const getArchiveLogs = async (params?: GetArchiveLogsParams, options?: RequestInit): Promise<ArchiveLogPage> => {
+
+  return customFetch<ArchiveLogPage>(getGetArchiveLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArchiveLogsQueryKey = (params?: GetArchiveLogsParams,) => {
+    return [
+    `/api/archive-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetArchiveLogsQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveLogs>>, TError = ErrorType<unknown>>(params?: GetArchiveLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArchiveLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveLogs>>> = ({ signal }) => getArchiveLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArchiveLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArchiveLogsQueryResult = NonNullable<Awaited<ReturnType<typeof getArchiveLogs>>>
+export type GetArchiveLogsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List archive / compression activity log entries
+ */
+
+export function useGetArchiveLogs<TData = Awaited<ReturnType<typeof getArchiveLogs>>, TError = ErrorType<unknown>>(
+ params?: GetArchiveLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArchiveLogsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

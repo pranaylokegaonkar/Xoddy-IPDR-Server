@@ -5,6 +5,7 @@ import { DeleteArchivesBody } from "@workspace/api-zod";
 import { serializeArchive } from "../lib/serializers";
 import { runCompression, getCompressionStatus } from "../lib/jobs";
 import { recordAudit } from "../lib/audit";
+import { recordArchiveLog } from "../lib/archive-log";
 
 const router: IRouter = Router();
 
@@ -36,6 +37,11 @@ router.post("/archives/delete", async (req, res): Promise<void> => {
     .where(inArray(flowArchivesTable.id, ids))
     .returning({ id: flowArchivesTable.id });
   await recordAudit(req, "archive.delete", `Deleted ${deleted.length} archive(s)`);
+  await recordArchiveLog(
+    "info",
+    "archive.delete",
+    `Deleted ${deleted.length} archive file(s)`,
+  );
   res.json({ deleted: deleted.length });
 });
 
@@ -80,6 +86,11 @@ router.delete("/archives/:id", async (req, res): Promise<void> => {
     return;
   }
   await recordAudit(req, "archive.delete", `Deleted archive "${row.fileName}"`);
+  await recordArchiveLog(
+    "info",
+    "archive.delete",
+    `Deleted archive "${row.fileName}"`,
+  );
   res.status(204).send();
 });
 
@@ -90,6 +101,11 @@ router.post("/archives/compress", (req, res): void => {
   // background job is a safe no-op when no window is ready, and it self-guards
   // against overlapping runs, so firing it unconditionally is fine. New
   // archives show up in the list as each window completes.
+  void recordArchiveLog(
+    "info",
+    "compression.trigger",
+    "Manual compression run requested",
+  );
   void runCompression()
     .then((results) =>
       req.log.info({ created: results.length }, "Manual compression run finished"),

@@ -150,7 +150,11 @@ paths:
       tags: [audit]
       summary: List system activity / audit log entries
       parameters:
-        - name: limit
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: pageSize
           in: query
           required: false
           schema: { type: integer }
@@ -164,13 +168,36 @@ paths:
           schema: { type: integer }
       responses:
         "200":
-          description: Audit log entries
+          description: Paginated audit log entries
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AuditLog"
+                $ref: "#/components/schemas/AuditLogPage"
+  /archive-logs:
+    get:
+      operationId: getArchiveLogs
+      tags: [archives]
+      summary: List archive / compression activity log entries
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: level
+          in: query
+          required: false
+          schema: { type: string, enum: [info, warning, error] }
+      responses:
+        "200":
+          description: Paginated archive/compression log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveLogPage"
   /user-types:
     get:
       operationId: getUserTypes
@@ -842,6 +869,38 @@ components:
         detail: { type: ["string", "null"] }
         ipAddress: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
+    AuditLogPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    ArchiveLog:
+      type: object
+      required: [id, level, event, message, createdAt]
+      properties:
+        id: { type: integer }
+        level: { type: string, enum: [info, warning, error] }
+        event: { type: string }
+        message: { type: string }
+        detail: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    ArchiveLogPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArchiveLog"
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
     UserType:
       type: object
       required: [value, label, description]

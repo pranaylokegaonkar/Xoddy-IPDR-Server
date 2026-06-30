@@ -7,7 +7,11 @@
  */
 
 export * from './allFlowDeletionStatus';
+export * from './archiveLog';
+export * from './archiveLogLevel';
+export * from './archiveLogPage';
 export * from './auditLog';
+export * from './auditLogPage';
 export * from './compressionStarted';
 export * from './compressionStatus';
 export * from './countResult';
@@ -25,6 +29,8 @@ export * from './flowRecord';
 export * from './flowSearch';
 export * from './flowSearchResult';
 export * from './flowTrendPoint';
+export * from './getArchiveLogsLevel';
+export * from './getArchiveLogsParams';
 export * from './getAuditLogsParams';
 export * from './healthStatus';
 export * from './loginInput';

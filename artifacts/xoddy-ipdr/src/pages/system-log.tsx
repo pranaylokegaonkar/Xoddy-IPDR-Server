@@ -1,7 +1,12 @@
-import React from "react";
-import { useGetAuditLogs } from "@workspace/api-client-react";
+import React, { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
+import {
+  useGetAuditLogs,
+  getGetAuditLogsQueryKey,
+} from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,8 +15,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollText, LogIn, LogOut, ShieldAlert } from "lucide-react";
+import {
+  ScrollText,
+  LogIn,
+  LogOut,
+  ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
+
+const PAGE_SIZE = 50;
 
 function actionMeta(action: string): {
   label: string;
@@ -46,7 +60,20 @@ function actionMeta(action: string): {
 }
 
 export default function SystemLog() {
-  const { data: logs, isLoading } = useGetAuditLogs({ limit: 500 });
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useGetAuditLogs(
+    { page, pageSize: PAGE_SIZE },
+    {
+      query: {
+        queryKey: getGetAuditLogsQueryKey({ page, pageSize: PAGE_SIZE }),
+        placeholderData: keepPreviousData,
+      },
+    },
+  );
+
+  const logs = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -79,7 +106,7 @@ export default function SystemLog() {
                       Loading…
                     </TableCell>
                   </TableRow>
-                ) : logs?.length === 0 ? (
+                ) : logs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
@@ -89,7 +116,7 @@ export default function SystemLog() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  logs?.map((log) => {
+                  logs.map((log) => {
                     const meta = actionMeta(log.action);
                     return (
                       <TableRow key={log.id}>
@@ -125,6 +152,40 @@ export default function SystemLog() {
                 )}
               </TableBody>
             </Table>
+
+            {total > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  Showing {(page - 1) * PAGE_SIZE + 1} to{" "}
+                  {Math.min(page * PAGE_SIZE, total)} of {total}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs font-medium"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className="size-4 mr-1" />
+                    Previous
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs font-medium"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                    <ChevronRight className="size-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

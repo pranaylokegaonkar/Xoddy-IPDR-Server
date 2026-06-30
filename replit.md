@@ -29,10 +29,11 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 
 ## Where things live
 
-- DB schema (source of truth): `lib/db/src/schema/` — `system-users`, `nas-devices`, `flow-records`, `notifications`, `flow-archives`, `audit-logs`, `user-sessions` (barrel `index.ts`)
+- DB schema (source of truth): `lib/db/src/schema/` — `system-users`, `nas-devices`, `flow-records`, `notifications`, `flow-archives`, `audit-logs`, `archive-logs`, `user-sessions` (barrel `index.ts`)
 - Auth: session middleware in `artifacts/api-server/src/app.ts` (express-session + connect-pg-simple, PG-backed `user_sessions`); routes `routes/auth.ts`; gate `middlewares/require-auth.ts`; bootstrap admin `lib/bootstrap.ts`; audit helper `lib/audit.ts`
 - API contract (source of truth): `lib/api-spec/openapi.yaml` → codegen into `@workspace/api-zod` and `@workspace/api-hooks`
-- Server routes: `artifacts/api-server/src/routes/` (dashboard, users, nas, flows, notifications, archives, auth, audit)
+- Server routes: `artifacts/api-server/src/routes/` (dashboard, users, nas, flows, notifications, archives, archive-logs, auth, audit)
+- Archive/compression activity log: `artifacts/api-server/src/lib/archive-log.ts` (`recordArchiveLog`, never throws) writes `archive_logs` rows; instrumented in `jobs.ts` (compression run/window/complete/error) and `routes/archives.ts` (manual trigger + archive deletes)
 - Collector + parsers: `artifacts/api-server/src/lib/collector.ts`
 - Background jobs (compression, stale-NAS notify): `artifacts/api-server/src/lib/jobs.ts`
 - Background NAS unarchived-flow deletion + progress tracking: `artifacts/api-server/src/lib/nas-flow-deletion.ts`
@@ -59,7 +60,9 @@ A MikroTik Traffic Flow (NetFlow/IPFIX) collector and IPDR (Internet Protocol De
 - Archives: list of compressed per-NAS 2h batches (with NAS name/IP column) showing record counts and compression ratios, plus a live progress banner during a run (current file/window, elapsed, estimated remaining, % complete, files done) polled from `GET /archives/compress/status`. Rows support checkbox select / select-all + bulk delete, per-row delete, and per-row download of the gzip file (`GET /archives/:id/download`, authed via Bearer token).
 - Users & user types; Notifications including "no records generating" alerts.
 - Authentication: username/password login, PG-backed sessions (8h), and logout. The whole UI is gated behind login; a default admin is bootstrapped on first run if no users exist. Auth works via either the session cookie OR an `Authorization: Bearer <token>` token (the signed session id, returned by login and stored in `localStorage`), so login works even inside the cross-site Replit preview iframe where browsers block third-party cookies.
-- System Log: audit trail of logins (incl. failed attempts), logouts, and user/NAS create-update-delete plus flow exports.
+- System Log: audit trail of logins (incl. failed attempts), logouts, and user/NAS create-update-delete plus flow exports. Paginated 50/page (server-side via `page`/`pageSize` on `GET /audit-logs`, which returns a `{items,total,page,pageSize}` envelope).
+- Archive Logs (nav item between System Log & Notifications): compression/archive activity and errors (events `compression.trigger/.window/.complete/.error`, `archive.delete`; levels info/warning/error). Paginated 50/page via `GET /archive-logs` (`{items,total,page,pageSize}` envelope, `pageSize` capped at 50, optional `level` filter).
+- After login the UI always lands on the Dashboard (login resets the browser path to `BASE_URL` before the auth-gated router mounts).
 
 ## User preferences
 

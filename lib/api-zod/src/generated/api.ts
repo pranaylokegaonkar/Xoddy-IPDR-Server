@@ -114,12 +114,14 @@ export const GetCurrentUserResponse = zod.object({
  * @summary List system activity / audit log entries
  */
 export const GetAuditLogsQueryParams = zod.object({
-  "limit": zod.coerce.number().optional(),
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional(),
   "action": zod.coerce.string().optional(),
   "userId": zod.coerce.number().optional()
 })
 
-export const GetAuditLogsResponseItem = zod.object({
+export const GetAuditLogsResponse = zod.object({
+  "items": zod.array(zod.object({
   "id": zod.number(),
   "userId": zod.number().nullish(),
   "username": zod.string(),
@@ -127,8 +129,35 @@ export const GetAuditLogsResponseItem = zod.object({
   "detail": zod.string().nullish(),
   "ipAddress": zod.string().nullish(),
   "createdAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
 })
-export const GetAuditLogsResponse = zod.array(GetAuditLogsResponseItem)
+
+
+/**
+ * @summary List archive / compression activity log entries
+ */
+export const GetArchiveLogsQueryParams = zod.object({
+  "page": zod.coerce.number().optional(),
+  "pageSize": zod.coerce.number().optional(),
+  "level": zod.enum(['info', 'warning', 'error']).optional()
+})
+
+export const GetArchiveLogsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "level": zod.enum(['info', 'warning', 'error']),
+  "event": zod.string(),
+  "message": zod.string(),
+  "detail": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
 
 
 /**

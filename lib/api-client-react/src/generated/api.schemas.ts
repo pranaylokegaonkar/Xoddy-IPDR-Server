@@ -114,6 +114,39 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export interface AuditLogPage {
+  items: AuditLog[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export type ArchiveLogLevel = typeof ArchiveLogLevel[keyof typeof ArchiveLogLevel];
+
+
+export const ArchiveLogLevel = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export interface ArchiveLog {
+  id: number;
+  level: ArchiveLogLevel;
+  event: string;
+  message: string;
+  /** @nullable */
+  detail?: string | null;
+  createdAt: string;
+}
+
+export interface ArchiveLogPage {
+  items: ArchiveLog[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface UserType {
   value: string;
   label: string;
@@ -434,8 +467,24 @@ export interface NasFlowDeletionStatus {
 }
 
 export type GetAuditLogsParams = {
-limit?: number;
+page?: number;
+pageSize?: number;
 action?: string;
 userId?: number;
 };
+
+export type GetArchiveLogsParams = {
+page?: number;
+pageSize?: number;
+level?: GetArchiveLogsLevel;
+};
+
+export type GetArchiveLogsLevel = typeof GetArchiveLogsLevel[keyof typeof GetArchiveLogsLevel];
+
+
+export const GetArchiveLogsLevel = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
 

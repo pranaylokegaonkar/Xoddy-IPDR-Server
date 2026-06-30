@@ -8,6 +8,7 @@ import {
   notificationsTable,
 } from "@workspace/db";
 import { logger } from "./logger";
+import { recordArchiveLog } from "./archive-log";
 
 const COMPRESSION_INTERVAL_MS = 1000 * 60 * 15;
 const COMPRESSION_STARTUP_DELAY_MS = 1000 * 60;
@@ -192,9 +193,24 @@ export async function runCompression(): Promise<CompressionResult[]> {
   compressionProgress.currentPeriodEndMs = null;
   compressionProgress.lastError = null;
   try {
-    return await compressBacklog();
+    const results = await compressBacklog();
+    if (results.length > 0) {
+      await recordArchiveLog(
+        "info",
+        "compression.complete",
+        `Compression run complete: ${results.length} archive file(s) created`,
+      );
+    }
+    return results;
   } catch (err) {
-    compressionProgress.lastError = err instanceof Error ? err.message : String(err);
+    const message = err instanceof Error ? err.message : String(err);
+    compressionProgress.lastError = message;
+    await recordArchiveLog(
+      "error",
+      "compression.error",
+      "Compression run failed",
+      message,
+    );
     throw err;
   } finally {
     compressionRunning = false;
@@ -378,6 +394,17 @@ async function compressBacklog(): Promise<CompressionResult[]> {
     // Advance progress to the end of the window we just archived.
     compressionProgress.processedUptoMs = windowEndMs;
     compressionProgress.completedCount += windowResults.length;
+
+    const windowRecordCount = windowResults.reduce(
+      (sum, r) => sum + r.recordCount,
+      0,
+    );
+    const { date, time } = istDateTimeStamp(windowStartMs);
+    await recordArchiveLog(
+      "info",
+      "compression.window",
+      `Archived ${date} ${time} IST window: ${windowResults.length} file(s), ${windowRecordCount} record(s)`,
+    );
   }
 
   return results;

@@ -9,6 +9,7 @@ import nasRouter from "./nas";
 import flowsRouter from "./flows";
 import notificationsRouter from "./notifications";
 import archivesRouter from "./archives";
+import archiveLogsRouter from "./archive-logs";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(nasRouter);
 router.use(flowsRouter);
 router.use(notificationsRouter);
 router.use(archivesRouter);
+router.use(archiveLogsRouter);
 
 export default router;

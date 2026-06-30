@@ -20,7 +20,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Activity, Archive, Bell, LayoutDashboard, LogOut, ScrollText, Search, Server, Users } from "lucide-react";
+import { Activity, Archive, Bell, FileClock, LayoutDashboard, LogOut, ScrollText, Search, Server, Users } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
 
 function initials(name: string): string {
@@ -52,6 +52,7 @@ export function AppSidebar() {
     { title: "Archives", href: "/archives", icon: Archive },
     { title: "Users", href: "/users", icon: Users },
     { title: "System Log", href: "/system-log", icon: ScrollText },
+    { title: "Archive Logs", href: "/archive-logs", icon: FileClock },
     { title: "Notifications", href: "/notifications", icon: Bell },
   ];
 

@@ -13,6 +13,7 @@ import Flows from "@/pages/flows";
 import NasList from "@/pages/nas";
 import UsersList from "@/pages/users";
 import SystemLog from "@/pages/system-log";
+import ArchiveLogs from "@/pages/archive-logs";
 import Notifications from "@/pages/notifications";
 import Archives from "@/pages/archives";
 
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/nas" component={NasList} />
         <Route path="/users" component={UsersList} />
         <Route path="/system-log" component={SystemLog} />
+        <Route path="/archive-logs" component={ArchiveLogs} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/archives" component={Archives} />
         <Route component={NotFound} />

@@ -8,3 +8,4 @@
 - [Drizzle inArray at scale](drizzle-inarray-scale.md) — a huge id list to inArray crashes the SQL builder + busts Postgres's 65535 param limit; use a subquery for deletes, chunked exact ids for frozen-set updates.
 - [Orval path+query param collision](orval-path-query-param-collision.md) — never mix a path param and a query param on one OpenAPI op (TS2308 dup export); use a path-only sub-route instead.
 - [Periodic job scheduling on restart-prone hosts](compression-scheduler.md) — one long setInterval resets on every restart and never fires; use a short poll gated by a cheap indexed readiness check + a startup kick.
+- [orval query options](orval-query-options.md) — generated useGetX hooks need an explicit queryKey (via getGetXQueryKey) whenever you pass a query options object, else TS2741.
