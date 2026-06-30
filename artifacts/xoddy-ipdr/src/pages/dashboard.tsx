@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell, Trash2, Loader2 } from "lucide-react";
+import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
   const { data: topTalkers, isLoading: isLoadingTalkers } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
+  const { data: resources, isLoading: isLoadingResources } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
 
   const deleteAllFlows = useDeleteAllFlows();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -174,6 +175,24 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Server resources row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ResourceCard
+            title="Disk Space"
+            icon={HardDrive}
+            data={resources?.disk}
+            loading={isLoadingResources}
+            formatBytes={formatBytes}
+          />
+          <ResourceCard
+            title="Memory (RAM)"
+            icon={MemoryStick}
+            data={resources?.memory}
+            loading={isLoadingResources}
+            formatBytes={formatBytes}
+          />
+        </div>
+
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2 flex flex-col shadow-sm border-border overflow-hidden">
@@ -293,6 +312,50 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function ResourceCard({ title, icon: Icon, data, loading, formatBytes }: any) {
+  const percent = data ? Math.min(100, Math.max(0, data.percent)) : 0;
+  const high = percent >= 90;
+  const mid = percent >= 75 && percent < 90;
+  const barColor = high ? "bg-destructive" : mid ? "bg-amber-500" : "bg-primary";
+  const pctColor = high ? "text-destructive" : mid ? "text-amber-600" : "text-foreground";
+
+  return (
+    <Card className="shadow-sm border-border">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between pb-3">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="p-2 rounded-md bg-primary/10 text-primary">
+            <Icon className="h-4 w-4" />
+          </div>
+        </div>
+
+        {loading || !data ? (
+          <div className="space-y-3">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-2 w-full" />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold tracking-tight">{formatBytes(data.used)}</span>
+              <span className="text-sm text-muted-foreground">used of {formatBytes(data.total)}</span>
+            </div>
+
+            <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div className={`h-full ${barColor} transition-all duration-500`} style={{ width: `${percent}%` }} />
+            </div>
+
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">{formatBytes(data.free)} free</span>
+              <span className={`font-semibold ${pctColor}`}>{percent.toFixed(1)}% used</span>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

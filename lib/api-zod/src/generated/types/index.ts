@@ -42,6 +42,8 @@ export * from './nasUpdateFlowVersion';
 export * from './notification';
 export * from './notificationSeverity';
 export * from './notificationType';
+export * from './resourceUsage';
+export * from './systemResources';
 export * from './systemUser';
 export * from './systemUserUserType';
 export * from './topTalker';

@@ -57,6 +57,25 @@ export const GetTopTalkersResponse = zod.array(GetTopTalkersResponseItem)
 
 
 /**
+ * @summary Host disk space and RAM usage of the collector server
+ */
+export const GetSystemResourcesResponse = zod.object({
+  "disk": zod.object({
+  "total": zod.number(),
+  "used": zod.number(),
+  "free": zod.number(),
+  "percent": zod.number()
+}),
+  "memory": zod.object({
+  "total": zod.number(),
+  "used": zod.number(),
+  "free": zod.number(),
+  "percent": zod.number()
+})
+})
+
+
+/**
  * @summary Authenticate and start a session
  */
 

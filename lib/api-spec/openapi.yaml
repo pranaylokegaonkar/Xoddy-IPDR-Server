@@ -81,6 +81,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TopTalker"
+  /dashboard/system-resources:
+    get:
+      operationId: getSystemResources
+      tags: [dashboard]
+      summary: Host disk space and RAM usage of the collector server
+      responses:
+        "200":
+          description: System resource usage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemResources"
 
   /auth/login:
     post:
@@ -783,6 +795,20 @@ components:
         ip: { type: string }
         count: { type: integer }
         bytes: { type: integer }
+    ResourceUsage:
+      type: object
+      required: [total, used, free, percent]
+      properties:
+        total: { type: integer }
+        used: { type: integer }
+        free: { type: integer }
+        percent: { type: number }
+    SystemResources:
+      type: object
+      required: [disk, memory]
+      properties:
+        disk: { $ref: "#/components/schemas/ResourceUsage" }
+        memory: { $ref: "#/components/schemas/ResourceUsage" }
 
     LoginInput:
       type: object

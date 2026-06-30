@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import os from "node:os";
+import { statfs, readFile } from "node:fs/promises";
 import { sql, eq, desc } from "drizzle-orm";
 import {
   db,
@@ -101,6 +103,65 @@ router.get("/dashboard/top-talkers", async (_req, res) => {
       bytes: Number(r.bytes),
     })),
   );
+});
+
+// Read accurate memory figures from /proc/meminfo when available (Linux):
+// MemAvailable reflects memory actually reclaimable for new work, so it matches
+// what `free -h` reports far better than os.freemem() (which excludes cache and
+// makes "used" look alarmingly high). Falls back to os.* on non-Linux hosts.
+async function readMemory(): Promise<{
+  total: number;
+  used: number;
+  free: number;
+}> {
+  try {
+    const text = await readFile("/proc/meminfo", "utf8");
+    const kb = (key: string) => {
+      const m = text.match(new RegExp(`^${key}:\\s+(\\d+)\\s+kB`, "m"));
+      return m ? Number(m[1]) * 1024 : null;
+    };
+    const total = kb("MemTotal");
+    const available = kb("MemAvailable");
+    if (total != null && available != null) {
+      const free = Math.min(available, total);
+      return { total, used: total - free, free };
+    }
+  } catch {
+    // fall through to os.* below
+  }
+  const total = os.totalmem();
+  const free = os.freemem();
+  return { total, used: total - free, free };
+}
+
+router.get("/dashboard/system-resources", async (_req, res) => {
+  // Disk usage of the filesystem hosting the running app (its data dir). statfs
+  // is available in Node 18.15+/19.6+ (Node 24 here). "free" uses bavail (space
+  // available to unprivileged processes, matching `df`'s Avail column).
+  const [disk, memory] = await Promise.all([
+    (async () => {
+      try {
+        const s = await statfs(process.cwd());
+        const total = s.blocks * s.bsize;
+        const free = s.bavail * s.bsize;
+        const used = total - s.bfree * s.bsize;
+        return { total, used, free };
+      } catch {
+        return { total: 0, used: 0, free: 0 };
+      }
+    })(),
+    readMemory(),
+  ]);
+
+  // Percent over used+free (not total) so it matches `df`'s Use% column: on a
+  // filesystem with root-reserved blocks, total > used+free, and `df` reports
+  // used/(used+avail). For memory used+free === total, so this is equivalent.
+  const withPercent = (r: { total: number; used: number; free: number }) => {
+    const denom = r.used + r.free;
+    return { ...r, percent: denom > 0 ? (r.used / denom) * 100 : 0 };
+  };
+
+  res.json({ disk: withPercent(disk), memory: withPercent(memory) });
 });
 
 export default router;

@@ -62,6 +62,18 @@ export interface TopTalker {
   bytes: number;
 }
 
+export interface ResourceUsage {
+  total: number;
+  used: number;
+  free: number;
+  percent: number;
+}
+
+export interface SystemResources {
+  disk: ResourceUsage;
+  memory: ResourceUsage;
+}
+
 export interface LoginInput {
   /** @minLength 1 */
   username: string;

@@ -46,6 +46,7 @@ import type {
   NasStatusUpdate,
   NasUpdate,
   Notification,
+  SystemResources,
   SystemUser,
   TopTalker,
   UserInput,
@@ -362,6 +363,83 @@ export function useGetTopTalkers<TData = Awaited<ReturnType<typeof getTopTalkers
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTopTalkersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSystemResourcesUrl = () => {
+
+
+
+
+  return `/api/dashboard/system-resources`
+}
+
+/**
+ * @summary Host disk space and RAM usage of the collector server
+ */
+export const getSystemResources = async ( options?: RequestInit): Promise<SystemResources> => {
+
+  return customFetch<SystemResources>(getGetSystemResourcesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSystemResourcesQueryKey = () => {
+    return [
+    `/api/dashboard/system-resources`
+    ] as const;
+    }
+
+
+export const getGetSystemResourcesQueryOptions = <TData = Awaited<ReturnType<typeof getSystemResources>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemResources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSystemResourcesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSystemResources>>> = ({ signal }) => getSystemResources({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemResources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSystemResourcesQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemResources>>>
+export type GetSystemResourcesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Host disk space and RAM usage of the collector server
+ */
+
+export function useGetSystemResources<TData = Awaited<ReturnType<typeof getSystemResources>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemResources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSystemResourcesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
