@@ -7,3 +7,4 @@
 - [Archive 2-hour windowing](archive-windowing.md) — archives bucket by fixed IST 2h clock windows (by end_time, half-open, 15-min grace); duplicate late-arrival archives are intentional (never drop IPDR records).
 - [Drizzle inArray at scale](drizzle-inarray-scale.md) — a huge id list to inArray crashes the SQL builder + busts Postgres's 65535 param limit; use a subquery for deletes, chunked exact ids for frozen-set updates.
 - [Orval path+query param collision](orval-path-query-param-collision.md) — never mix a path param and a query param on one OpenAPI op (TS2308 dup export); use a path-only sub-route instead.
+- [Periodic job scheduling on restart-prone hosts](compression-scheduler.md) — one long setInterval resets on every restart and never fires; use a short poll gated by a cheap indexed readiness check + a startup kick.

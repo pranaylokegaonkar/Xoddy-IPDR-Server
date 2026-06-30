@@ -9,7 +9,8 @@ import {
 } from "@workspace/db";
 import { logger } from "./logger";
 
-const COMPRESSION_INTERVAL_MS = 1000 * 60 * 60 * 2;
+const COMPRESSION_INTERVAL_MS = 1000 * 60 * 15;
+const COMPRESSION_STARTUP_DELAY_MS = 1000 * 60;
 const NOTIFY_INTERVAL_MS = 1000 * 60 * 15;
 const STALE_WINDOW_MS = 1000 * 60 * 60;
 
@@ -421,12 +422,51 @@ export async function checkRecordGeneration(): Promise<void> {
   }
 }
 
+// Cheap, indexed pre-check: is there at least one fully-elapsed (past its grace)
+// window with unarchived records ready to compress? Mirrors compressBacklog's
+// readiness test (earliest unarchived record before the current window + the
+// post-close grace) so the scheduler only calls runCompression when there is
+// real work — avoiding no-op runs that would briefly flash the progress banner.
+// Backed by flow_records_archived_end_idx (archived, end_time), so it stays fast
+// even on a large hot table.
+async function hasCompressibleBacklog(): Promise<boolean> {
+  const now = Date.now();
+  const currentWindowStart = new Date(windowStartUtcMs(now));
+  const [earliest] = await db
+    .select({ endTime: flowRecordsTable.endTime })
+    .from(flowRecordsTable)
+    .where(
+      and(
+        eq(flowRecordsTable.archived, 0),
+        lt(flowRecordsTable.endTime, currentWindowStart),
+      ),
+    )
+    .orderBy(flowRecordsTable.endTime)
+    .limit(1);
+  if (!earliest) return false;
+  const windowEndMs =
+    windowStartUtcMs(earliest.endTime.getTime()) + ARCHIVE_WINDOW_MS;
+  return windowEndMs + ARCHIVE_GRACE_MS <= now;
+}
+
 export function startJobs(): void {
-  setInterval(() => {
-    void runCompression().catch((err) =>
-      logger.error({ err }, "Compression job failed"),
-    );
-  }, COMPRESSION_INTERVAL_MS);
+  const runCompressionIfDue = () =>
+    void hasCompressibleBacklog()
+      .then((due) => (due ? runCompression() : []))
+      .catch((err) => logger.error({ err }, "Compression job failed"));
+
+  // Run a check shortly after startup so a freshly (re)started service archives
+  // any windows that closed while it was down, rather than waiting a whole
+  // interval. Delayed a minute so it doesn't compete with boot/collector init.
+  setTimeout(runCompressionIfDue, COMPRESSION_STARTUP_DELAY_MS);
+
+  // Then poll on a short cadence. Windows close every 2h, but we check every
+  // 15 min (the pre-check is a single indexed lookup, a no-op when nothing is
+  // ready) so each window is archived within ~15 min of its grace expiring
+  // ("shortly after", as the UI states). A single 2h timer instead drifts off
+  // the window boundaries and — because it resets on every systemd restart —
+  // can keep getting cut short before it ever fires.
+  setInterval(runCompressionIfDue, COMPRESSION_INTERVAL_MS);
 
   setInterval(() => {
     void checkRecordGeneration().catch((err) =>
@@ -434,5 +474,5 @@ export function startJobs(): void {
     );
   }, NOTIFY_INTERVAL_MS);
 
-  logger.info("Background jobs scheduled (compression 2h, notify 15m)");
+  logger.info("Background jobs scheduled (compression check 15m, notify 15m)");
 }
