@@ -1,0 +1,51 @@
+root@xoddy-ipdr-server:~# cd /opt/xoddy-ipdr
+BASE_PATH=/ pnpm --filter @workspace/xoddy-ipdr run build
+$ vite build --config vite.config.ts
+failed to load config from /opt/xoddy-ipdr/artifacts/xoddy-ipdr/vite.config.ts
+error during build:
+Error: PORT environment variable is required but was not provided.
+    at file:///opt/xoddy-ipdr/artifacts/xoddy-ipdr/node_modules/.vite-temp/vite.config.ts.timestamp-1782827070093-2823346d282c08.mjs:10:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:633:26
+    at async loadConfigFromBundledFile (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:35936:12)
+    at async bundleAndLoadConfigFile (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:35824:17)
+    at async loadConfigFromFile (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:35791:42)
+    at async resolveConfig (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:35440:22)
+    at async createBuilder (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:33895:19)
+    at async CAC.<anonymous> (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/cli.js:629:10)
+/opt/xoddy-ipdr/artifacts/xoddy-ipdr:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/xoddy-ipdr@0.0.0 build: `vite build --config vite.config.ts`
+Exit status 1
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# BASE_PATH=/ pnpm run build
+$ pnpm run typecheck && pnpm -r --if-present run build
+$ pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --filter "./scripts" --if-present run typecheck
+$ tsc --build
+Scope: 4 of 9 workspace projects
+artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+└─ Done in 13s
+artifacts/xoddy-ipdr typecheck$ tsc -p tsconfig.json --noEmit
+└─ Done in 23.3s
+artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+└─ Done in 17.8s
+scripts typecheck$ tsc -p tsconfig.json --noEmit
+└─ Done in 8.3s
+Scope: 8 of 9 workspace projects
+artifacts/mockup-sandbox build$ vite build
+│ failed to load config from /opt/xoddy-ipdr/artifacts/mockup-sandbox/vite.config.ts
+│ error during build:
+│ Error: PORT environment variable is required but was not provided.
+│     at file:///opt/xoddy-ipdr/artifacts/mockup-sandbox/node_modules/.vite-temp/vite.config.ts.timestamp-1782827117551-01b6c5fcab5c58.mjs:145:9
+│     at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+│     at async node:internal/modules/esm/loader:633:26
+│     at async loadConfigFromBundledFile (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.…
+│     at async bundleAndLoadConfigFile (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/…
+│     at async loadConfigFromFile (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_…
+│     at async resolveConfig (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modul…
+│     at async createBuilder (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_modul…
+│     at async CAC.<anonymous> (file:///opt/xoddy-ipdr/node_modules/.pnpm/vite@7.3.3_@types+node@25.6.2_jiti@2.7.0_lightningcss@1.32.0_tsx@4.21.0_yaml@2.8.4/node_mod…
+└─ Failed in 1.7s at /opt/xoddy-ipdr/artifacts/mockup-sandbox
+/opt/xoddy-ipdr/artifacts/mockup-sandbox:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/mockup-sandbox@2.0.0 build: `vite build`
+Exit status 1
+[ELIFECYCLE] Command failed with exit code 1.
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
