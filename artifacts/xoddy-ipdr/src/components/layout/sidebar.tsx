@@ -64,11 +64,10 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold tracking-tight uppercase">Xoddy</span>
-            <span className="text-[10px] text-sidebar-foreground/70 leading-none">IPDR Server</span>
+            <span className="text-sidebar-foreground/70 text-[20px]">IPDR Server</span>
           </div>
         </div>
       </SidebarHeader>
-
       <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wider text-sidebar-foreground/50 mb-2 font-mono">
@@ -98,7 +97,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter className="p-4 border-t border-sidebar-border/50">
         <div className="flex items-center gap-3">
           <div className="size-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground">
