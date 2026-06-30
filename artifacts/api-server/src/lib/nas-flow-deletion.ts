@@ -117,20 +117,27 @@ async function runDeletion(state: NasDeletionState): Promise<void> {
       .where(scopeConds(lte(flowRecordsTable.id, cutoffId)));
     state.totalCount = countRow?.count ?? 0;
 
-    // Delete in bounded batches: grab a page of ids within the snapshot, delete
-    // exactly those, repeat until none remain. Bounds memory and per-statement
-    // time, and keeps progress (deletedCount) advancing for the UI.
+    // Delete in bounded batches until none remain. Bounds memory and
+    // per-statement time, and keeps progress (deletedCount) advancing for the
+    // UI. We delete via `id IN (SELECT id … LIMIT n)` rather than reading a page
+    // of ids and passing them to `inArray`: a batch of tens of thousands of ids
+    // overflows Drizzle's SQL builder (RangeError: Maximum call stack size
+    // exceeded) and exceeds Postgres's 65535-parameter limit. The subquery sends
+    // no id list, and `rowCount` tells us how many rows the batch actually removed.
     for (;;) {
-      const batch = await db
-        .select({ id: flowRecordsTable.id })
-        .from(flowRecordsTable)
-        .where(scopeConds(lte(flowRecordsTable.id, cutoffId)))
-        .limit(BATCH_SIZE);
-      if (batch.length === 0) break;
-
-      const ids = batch.map((b) => b.id);
-      await db.delete(flowRecordsTable).where(inArray(flowRecordsTable.id, ids));
-      state.deletedCount += ids.length;
+      const result = await db.delete(flowRecordsTable).where(
+        inArray(
+          flowRecordsTable.id,
+          db
+            .select({ id: flowRecordsTable.id })
+            .from(flowRecordsTable)
+            .where(scopeConds(lte(flowRecordsTable.id, cutoffId)))
+            .limit(BATCH_SIZE),
+        ),
+      );
+      const deleted = result.rowCount ?? 0;
+      if (deleted === 0) break;
+      state.deletedCount += deleted;
     }
 
     logger.info(

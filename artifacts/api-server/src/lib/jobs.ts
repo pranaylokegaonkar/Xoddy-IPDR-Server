@@ -345,10 +345,26 @@ async function compressBacklog(): Promise<CompressionResult[]> {
         } satisfies CompressionResult);
       }
 
-      await tx
-        .update(flowRecordsTable)
-        .set({ archived: 1 })
-        .where(inArray(flowRecordsTable.id, archivedIds));
+      // Mark exactly the frozen set we just gzipped. Marking must target the
+      // precise ids we read — NOT a predicate like `archived=0 AND end_time in
+      // window AND id<=maxId`: under READ COMMITTED a late record that obtained
+      // its (lower) serial id before our SELECT but commits between that SELECT
+      // and this UPDATE would match such a predicate and be flagged archived
+      // without ever being written to a payload — silently dropping an IPDR
+      // record. But a single `inArray` over every id overflows Drizzle's SQL
+      // builder (RangeError: Maximum call stack size exceeded) and exceeds
+      // Postgres's 65535-parameter-per-statement limit at production scale
+      // (hundreds of thousands of rows per window). So we mark the exact ids in
+      // bounded chunks, all within this same transaction, so the archive inserts
+      // and every flag update still commit atomically over the frozen set.
+      const MARK_CHUNK = 1000;
+      for (let i = 0; i < archivedIds.length; i += MARK_CHUNK) {
+        const chunk = archivedIds.slice(i, i + MARK_CHUNK);
+        await tx
+          .update(flowRecordsTable)
+          .set({ archived: 1 })
+          .where(inArray(flowRecordsTable.id, chunk));
+      }
 
       return created;
     });
