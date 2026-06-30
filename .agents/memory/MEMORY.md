@@ -5,3 +5,4 @@
 - [Bulk delete on a live-ingest table](bulk-delete-live-table.md) — background bulk deletes over a continuously-written table must snapshot an id cutoff at start, or they never terminate and silently destroy post-start records.
 - [flow_records unbounded growth & dashboard query cost](flow-records-unbounded-growth.md) — compression never deletes rows, so dashboard aggregates must be time-scoped + indexed or they full-scan and 504 in prod.
 - [Archive 2-hour windowing](archive-windowing.md) — archives bucket by fixed IST 2h clock windows (by end_time, half-open, 15-min grace); duplicate late-arrival archives are intentional (never drop IPDR records).
+- [Orval path+query param collision](orval-path-query-param-collision.md) — never mix a path param and a query param on one OpenAPI op (TS2308 dup export); use a path-only sub-route instead.

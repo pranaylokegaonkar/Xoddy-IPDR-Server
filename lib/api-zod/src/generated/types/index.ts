@@ -30,6 +30,7 @@ export * from './loginInput';
 export * from './nas';
 export * from './nasConfig';
 export * from './nasFlowDeletionStatus';
+export * from './nasFlowDeletionStatusScope';
 export * from './nasFlowVersion';
 export * from './nasInput';
 export * from './nasInputFlowVersion';

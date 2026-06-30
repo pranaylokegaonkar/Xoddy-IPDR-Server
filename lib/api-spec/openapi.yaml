@@ -419,6 +419,34 @@ paths:
       operationId: deleteNasFlows
       tags: [nas]
       summary: Start background deletion of a NAS device's unarchived flow records
+      description: >-
+        Removes only not-yet-compressed (unarchived) flow records; already
+        archived batches are kept. Poll the deletion-status endpoint for progress.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "202":
+          description: Deletion started; poll the deletion-status endpoint for progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletionStarted"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /nas/{id}/flows/all:
+    delete:
+      operationId: deleteAllNasFlows
+      tags: [nas]
+      summary: Start background deletion of ALL of a NAS device's flow records
+      description: >-
+        Removes every flow record for the NAS (archived + unarchived). The
+        durable gzip archive files remain available on the Archives page, so no
+        IPDR data is lost — only the redundant hot-table rows are purged. Poll
+        the deletion-status endpoint for progress.
       parameters:
         - $ref: "#/components/parameters/IdParam"
       responses:
@@ -984,10 +1012,13 @@ components:
 
     NasFlowDeletionStatus:
       type: object
-      required: [nasId, running, totalCount, deletedCount]
+      required: [nasId, running, totalCount, deletedCount, scope]
       properties:
         nasId: { type: integer }
         running: { type: boolean }
+        scope:
+          type: string
+          enum: [unarchived, all]
         startedAt:
           type: string
           format: date-time

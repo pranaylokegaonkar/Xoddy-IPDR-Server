@@ -5,10 +5,12 @@
  * Xoddy IPDR Server API - MikroTik Traffic Flow (NetFlow/IPFIX) collector
  * OpenAPI spec version: 0.1.0
  */
+import type { NasFlowDeletionStatusScope } from './nasFlowDeletionStatusScope';
 
 export interface NasFlowDeletionStatus {
   nasId: number;
   running: boolean;
+  scope: NasFlowDeletionStatusScope;
   startedAt?: Date | null;
   finishedAt?: Date | null;
   totalCount: number;

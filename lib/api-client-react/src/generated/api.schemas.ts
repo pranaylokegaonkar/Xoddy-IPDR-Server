@@ -385,9 +385,18 @@ export interface DeletionStarted {
   started: boolean;
 }
 
+export type NasFlowDeletionStatusScope = typeof NasFlowDeletionStatusScope[keyof typeof NasFlowDeletionStatusScope];
+
+
+export const NasFlowDeletionStatusScope = {
+  unarchived: 'unarchived',
+  all: 'all',
+} as const;
+
 export interface NasFlowDeletionStatus {
   nasId: number;
   running: boolean;
+  scope: NasFlowDeletionStatusScope;
   startedAt?: string | null;
   finishedAt?: string | null;
   totalCount: number;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useGetNasList, getGetNasListQueryKey, useCreateNas, useUpdateNas, useDeleteNas, useDeleteNasFlows, useSetNasStatus, useGetNasConfig, getGetNasConfigQueryKey, useGetNasFlowDeletionStatus, getGetNasFlowDeletionStatusQueryKey } from "@workspace/api-client-react";
+import { useGetNasList, getGetNasListQueryKey, useCreateNas, useUpdateNas, useDeleteNas, useDeleteNasFlows, useDeleteAllNasFlows, useSetNasStatus, useGetNasConfig, getGetNasConfigQueryKey, useGetNasFlowDeletionStatus, getGetNasFlowDeletionStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function NasList() {
   const queryClient = useQueryClient();
@@ -24,10 +25,15 @@ export default function NasList() {
   const setStatus = useSetNasStatus();
   const deleteNas = useDeleteNas();
   const deleteNasFlows = useDeleteNasFlows();
+  const deleteAllNasFlows = useDeleteAllNasFlows();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [selectedNasId, setSelectedNasId] = useState<number | null>(null);
+
+  // Flow-data delete dialog: pick scope (unarchived only vs everything) per NAS.
+  const [flowDeleteNas, setFlowDeleteNas] = useState<{ id: number; name: string } | null>(null);
+  const [flowDeleteScope, setFlowDeleteScope] = useState<"unarchived" | "all">("unarchived");
 
   // Live status of an in-progress unarchived-flow deletion for one NAS. Poll fast
   // while running, slow once done (the banner lingers briefly at 100%).
@@ -52,7 +58,7 @@ export default function NasList() {
         toast({ title: "Deletion failed", description: deletionStatus.lastError, variant: "destructive" });
       } else {
         toast({
-          title: "Unarchived data deleted",
+          title: deletionStatus.scope === "all" ? "All flow data deleted" : "Unarchived data deleted",
           description: `${deletionStatus.deletedCount.toLocaleString()} record(s) removed.`,
         });
       }
@@ -107,33 +113,35 @@ export default function NasList() {
     }
   };
 
-  const handleDeleteFlows = (nas: { id: number; name: string; flowCount: number }) => {
+  const openFlowDelete = (nas: { id: number; name: string; flowCount: number }) => {
     if (nas.flowCount === 0) {
-      toast({ title: "Nothing to delete", description: "This NAS has no unarchived flow records." });
+      toast({ title: "Nothing to delete", description: "This NAS has no flow records." });
       return;
     }
-    if (
-      confirm(
-        `Delete all unarchived flow records for "${nas.name}"?\n\n` +
-          `Already-archived (compressed) data is kept. This cannot be undone.`,
-      )
-    ) {
-      deleteNasFlows.mutate(
-        { id: nas.id },
-        {
-          onSuccess: () => {
-            // Clear any stale cached status from a prior run of this NAS so the
-            // poller starts fresh, then begin polling for live progress.
-            queryClient.removeQueries({ queryKey: getGetNasFlowDeletionStatusQueryKey(nas.id) });
-            wasDeleting.current = true;
-            setDeletingNasId(nas.id);
-          },
-          onError: (err: any) => {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
-          },
+    setFlowDeleteScope("unarchived");
+    setFlowDeleteNas({ id: nas.id, name: nas.name });
+  };
+
+  const confirmFlowDelete = () => {
+    if (!flowDeleteNas) return;
+    const { id } = flowDeleteNas;
+    const mutation = flowDeleteScope === "all" ? deleteAllNasFlows : deleteNasFlows;
+    mutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          // Clear any stale cached status from a prior run of this NAS so the
+          // poller starts fresh, then begin polling for live progress.
+          queryClient.removeQueries({ queryKey: getGetNasFlowDeletionStatusQueryKey(id) });
+          wasDeleting.current = true;
+          setDeletingNasId(id);
+          setFlowDeleteNas(null);
         },
-      );
-    }
+        onError: (err: any) => {
+          toast({ title: "Error", description: err.message, variant: "destructive" });
+        },
+      },
+    );
   };
 
   const openConfig = (id: number) => {
@@ -161,7 +169,9 @@ export default function NasList() {
                 <div className="flex items-center gap-2 min-w-0">
                   <Loader2 className="size-4 text-amber-600 animate-spin shrink-0" />
                   <span className="text-sm font-medium">
-                    {deletionStatus.running ? "Deleting unarchived data" : "Deletion complete"}
+                    {deletionStatus.running
+                      ? (deletionStatus.scope === "all" ? "Deleting all flow data" : "Deleting unarchived data")
+                      : "Deletion complete"}
                   </span>
                   <span className="font-mono text-xs text-amber-700 truncate">
                     {deletingNas?.name ?? `NAS #${deletingNasId}`}
@@ -264,7 +274,7 @@ export default function NasList() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedNasId(nas.id); setIsFormOpen(true); }}>
                           <Edit className="size-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleDeleteFlows(nas)} disabled={deleteNasFlows.isPending || deletingNasId === nas.id} title="Delete unarchived flow data">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => openFlowDelete(nas)} disabled={deleteNasFlows.isPending || deleteAllNasFlows.isPending || deletingNasId === nas.id} title="Delete flow data">
                           {deletingNasId === nas.id && deletionStatus?.running ? <Loader2 className="size-4 animate-spin" /> : <Eraser className="size-4" />}
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(nas.id)} title="Delete NAS">
@@ -279,6 +289,39 @@ export default function NasList() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={flowDeleteNas != null} onOpenChange={(o) => { if (!o) setFlowDeleteNas(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete flow data</DialogTitle>
+            <DialogDescription>
+              Choose what to remove for <span className="font-medium text-foreground">{flowDeleteNas?.name}</span>. This runs in the background and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={flowDeleteScope} onValueChange={(v) => setFlowDeleteScope(v as "unarchived" | "all")} className="gap-3 py-2">
+            <Label htmlFor="scope-unarchived" className="flex items-start gap-3 rounded-md border p-3 cursor-pointer">
+              <RadioGroupItem value="unarchived" id="scope-unarchived" className="mt-0.5" />
+              <span className="space-y-1">
+                <span className="block text-sm font-medium">Unarchived only</span>
+                <span className="block text-xs text-muted-foreground font-normal">Removes records not yet compressed. Already-archived batches are kept. (If everything is already archived, nothing will be removed.)</span>
+              </span>
+            </Label>
+            <Label htmlFor="scope-all" className="flex items-start gap-3 rounded-md border p-3 cursor-pointer">
+              <RadioGroupItem value="all" id="scope-all" className="mt-0.5" />
+              <span className="space-y-1">
+                <span className="block text-sm font-medium">Everything</span>
+                <span className="block text-xs text-muted-foreground font-normal">Removes all flow records (archived + unarchived). The downloadable archive files on the Archives page are kept, so no archived data is lost.</span>
+              </span>
+            </Label>
+          </RadioGroup>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFlowDeleteNas(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmFlowDelete} disabled={deleteNasFlows.isPending || deleteAllNasFlows.isPending}>
+              {flowDeleteScope === "all" ? "Delete everything" : "Delete unarchived"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isFormOpen && (
         <NasFormModal 

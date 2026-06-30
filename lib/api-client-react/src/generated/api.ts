@@ -1644,6 +1644,7 @@ export const getDeleteNasFlowsUrl = (id: number,) => {
 }
 
 /**
+ * Removes only not-yet-compressed (unarchived) flow records; already archived batches are kept. Poll the deletion-status endpoint for progress.
  * @summary Start background deletion of a NAS device's unarchived flow records
  */
 export const deleteNasFlows = async (id: number, options?: RequestInit): Promise<DeletionStarted> => {
@@ -1703,6 +1704,77 @@ export const useDeleteNasFlows = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getDeleteNasFlowsMutationOptions(options));
+    }
+
+export const getDeleteAllNasFlowsUrl = (id: number,) => {
+
+
+
+
+  return `/api/nas/${id}/flows/all`
+}
+
+/**
+ * Removes every flow record for the NAS (archived + unarchived). The durable gzip archive files remain available on the Archives page, so no IPDR data is lost — only the redundant hot-table rows are purged. Poll the deletion-status endpoint for progress.
+ * @summary Start background deletion of ALL of a NAS device's flow records
+ */
+export const deleteAllNasFlows = async (id: number, options?: RequestInit): Promise<DeletionStarted> => {
+
+  return customFetch<DeletionStarted>(getDeleteAllNasFlowsUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAllNasFlowsMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAllNasFlows>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAllNasFlows>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAllNasFlows'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAllNasFlows>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAllNasFlows(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAllNasFlowsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAllNasFlows>>>
+
+    export type DeleteAllNasFlowsMutationError = ErrorType<Error>
+
+    /**
+ * @summary Start background deletion of ALL of a NAS device's flow records
+ */
+export const useDeleteAllNasFlows = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAllNasFlows>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAllNasFlows>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAllNasFlowsMutationOptions(options));
     }
 
 export const getGetNasFlowDeletionStatusUrl = (id: number,) => {

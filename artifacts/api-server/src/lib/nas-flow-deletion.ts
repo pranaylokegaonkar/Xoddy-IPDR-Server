@@ -7,9 +7,12 @@ import { logger } from "./logger";
 // request timeout (the same 504 risk the compression job avoids), so we run it in
 // the background in bounded batches and expose live progress for the UI to poll.
 
+export type NasFlowDeletionScope = "unarchived" | "all";
+
 interface NasDeletionState {
   nasId: number;
   nasName: string;
+  scope: NasFlowDeletionScope;
   running: boolean;
   startedAtMs: number;
   finishedAtMs: number | null;
@@ -27,6 +30,7 @@ const BATCH_SIZE = 10000;
 export interface NasFlowDeletionStatus {
   nasId: number;
   running: boolean;
+  scope: NasFlowDeletionScope;
   startedAt: string | null;
   finishedAt: string | null;
   totalCount: number;
@@ -41,13 +45,18 @@ export interface NasFlowDeletionStatus {
 // one for this NAS is already running (an impatient double-click can't launch two
 // passes at once). The route uses this so its audit log + response reflect whether
 // a job was actually started. The client polls getNasFlowDeletionStatus either way.
-export function startNasFlowDeletion(nasId: number, nasName: string): boolean {
+export function startNasFlowDeletion(
+  nasId: number,
+  nasName: string,
+  scope: NasFlowDeletionScope = "unarchived",
+): boolean {
   const existing = deletions.get(nasId);
   if (existing?.running) return false;
 
   const state: NasDeletionState = {
     nasId,
     nasName,
+    scope,
     running: true,
     startedAtMs: Date.now(),
     finishedAtMs: null,
@@ -68,7 +77,22 @@ export function startNasFlowDeletion(nasId: number, nasName: string): boolean {
 
 async function runDeletion(state: NasDeletionState): Promise<void> {
   try {
-    // Snapshot the work at start by capturing the highest unarchived id for this
+    // The set of rows in scope. For "all" we delete every record for the NAS
+    // (archived + unarchived); for "unarchived" we keep already-compressed rows.
+    // Deleting archived rows is safe: compression stores a durable gzip copy in
+    // `flow_archives` (downloadable on the Archives page), so the archived rows in
+    // `flow_records` are a redundant hot-table copy — purging them frees the table
+    // without losing IPDR data.
+    const scopeConds = (extra?: ReturnType<typeof lte>) => {
+      const conds = [eq(flowRecordsTable.nasId, state.nasId)];
+      if (state.scope === "unarchived") {
+        conds.push(eq(flowRecordsTable.archived, 0));
+      }
+      if (extra) conds.push(extra);
+      return and(...conds);
+    };
+
+    // Snapshot the work at start by capturing the highest in-scope id for this
     // NAS. We only ever delete `id <= cutoffId`. This is essential for an IPDR
     // collector: records keep arriving during the delete, and without a cutoff the
     // loop would keep picking up post-start arrivals — never terminating AND
@@ -78,12 +102,7 @@ async function runDeletion(state: NasDeletionState): Promise<void> {
     const [maxRow] = await db
       .select({ id: flowRecordsTable.id })
       .from(flowRecordsTable)
-      .where(
-        and(
-          eq(flowRecordsTable.nasId, state.nasId),
-          eq(flowRecordsTable.archived, 0),
-        ),
-      )
+      .where(scopeConds())
       .orderBy(desc(flowRecordsTable.id))
       .limit(1);
     const cutoffId = maxRow?.id ?? null;
@@ -95,13 +114,7 @@ async function runDeletion(state: NasDeletionState): Promise<void> {
     const [countRow] = await db
       .select({ count: sql<number>`cast(count(*) as int)` })
       .from(flowRecordsTable)
-      .where(
-        and(
-          eq(flowRecordsTable.nasId, state.nasId),
-          eq(flowRecordsTable.archived, 0),
-          lte(flowRecordsTable.id, cutoffId),
-        ),
-      );
+      .where(scopeConds(lte(flowRecordsTable.id, cutoffId)));
     state.totalCount = countRow?.count ?? 0;
 
     // Delete in bounded batches: grab a page of ids within the snapshot, delete
@@ -111,13 +124,7 @@ async function runDeletion(state: NasDeletionState): Promise<void> {
       const batch = await db
         .select({ id: flowRecordsTable.id })
         .from(flowRecordsTable)
-        .where(
-          and(
-            eq(flowRecordsTable.nasId, state.nasId),
-            eq(flowRecordsTable.archived, 0),
-            lte(flowRecordsTable.id, cutoffId),
-          ),
-        )
+        .where(scopeConds(lte(flowRecordsTable.id, cutoffId)))
         .limit(BATCH_SIZE);
       if (batch.length === 0) break;
 
@@ -127,8 +134,8 @@ async function runDeletion(state: NasDeletionState): Promise<void> {
     }
 
     logger.info(
-      { nasId: state.nasId, deleted: state.deletedCount },
-      "Deleted unarchived flow records for NAS",
+      { nasId: state.nasId, scope: state.scope, deleted: state.deletedCount },
+      "Deleted flow records for NAS",
     );
   } finally {
     state.running = false;
@@ -144,6 +151,7 @@ export function getNasFlowDeletionStatus(nasId: number): NasFlowDeletionStatus {
     return {
       nasId,
       running: false,
+      scope: "unarchived",
       startedAt: null,
       finishedAt: null,
       totalCount: 0,
@@ -175,6 +183,7 @@ export function getNasFlowDeletionStatus(nasId: number): NasFlowDeletionStatus {
   return {
     nasId: s.nasId,
     running: s.running,
+    scope: s.scope,
     startedAt: new Date(s.startedAtMs).toISOString(),
     finishedAt: s.finishedAtMs != null ? new Date(s.finishedAtMs).toISOString() : null,
     totalCount: s.totalCount,

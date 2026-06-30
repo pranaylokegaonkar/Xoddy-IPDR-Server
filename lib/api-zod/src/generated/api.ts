@@ -363,9 +363,19 @@ export const GetNasConfigResponse = zod.object({
 
 
 /**
+ * Removes only not-yet-compressed (unarchived) flow records; already archived batches are kept. Poll the deletion-status endpoint for progress.
  * @summary Start background deletion of a NAS device's unarchived flow records
  */
 export const DeleteNasFlowsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Removes every flow record for the NAS (archived + unarchived). The durable gzip archive files remain available on the Archives page, so no IPDR data is lost — only the redundant hot-table rows are purged. Poll the deletion-status endpoint for progress.
+ * @summary Start background deletion of ALL of a NAS device's flow records
+ */
+export const DeleteAllNasFlowsParams = zod.object({
   "id": zod.coerce.number()
 })
 
@@ -380,6 +390,7 @@ export const GetNasFlowDeletionStatusParams = zod.object({
 export const GetNasFlowDeletionStatusResponse = zod.object({
   "nasId": zod.number(),
   "running": zod.boolean(),
+  "scope": zod.enum(['unarchived', 'all']),
   "startedAt": zod.coerce.date().nullish(),
   "finishedAt": zod.coerce.date().nullish(),
   "totalCount": zod.number(),
