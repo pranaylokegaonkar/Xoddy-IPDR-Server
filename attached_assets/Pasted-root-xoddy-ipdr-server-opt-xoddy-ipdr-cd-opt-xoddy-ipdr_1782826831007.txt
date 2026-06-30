@@ -1,0 +1,49 @@
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# cd /opt/xoddy-ipdr
+
+# A. Is the new code even pulled? This should print the two router lines.
+grep -n "deletion-status" artifacts/api-server/src/routes/flows.ts
+
+# B. What commit is checked out, and on what branch?
+git log --oneline -3
+git status -sb
+20:// background job and responds 202; the client polls /flows/deletion-status.
+35:router.get("/flows/deletion-status", (_req, res): void => {
+93c52e2 (HEAD -> main, origin/main, origin/HEAD) Add a feature to delete all stored data with progress tracking
+78ee0ab Add a way to delete all flow records for a network device
+fe76950 Add option to delete all flow records for a NAS device
+## main...origin/main
+ M pnpm-workspace.yaml
+?? .env
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# git pull
+Username for 'https://github.com': pranaylokegaonkar
+Password for 'https://pranaylokegaonkar@github.com':
+Already up to date.
+root@xoddy-ipdr-server:/opt/xoddy-ipdr# pnpm install
+pnpm --filter @workspace/api-server run build   # must finish with NO errors
+ls -l artifacts/api-server/dist/index.mjs        # check the timestamp is "now"
+sudo systemctl restart xoddy-ipdr
+Scope: all 9 workspace projects
+✓ Lockfile passes supply-chain policies (verified 6d ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+└─ Done in 81ms
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+$ node ./build.mjs
+
+  dist/index.mjs                       3.8mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.0kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   6.7mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.0kb
+  dist/pino-pretty.mjs.map           204.0kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+
+⚡ Done in 5577ms
+-rw-r--r-- 1 root root 3956982 Jun 30 13:39 artifacts/api-server/dist/index.mjs
+root@xoddy-ipdr-server:/opt/xoddy-ipdr#
