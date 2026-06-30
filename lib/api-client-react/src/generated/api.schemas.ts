@@ -385,6 +385,20 @@ export interface DeletionStarted {
   started: boolean;
 }
 
+export interface AllFlowDeletionStatus {
+  running: boolean;
+  /** Whether a deletion run has ever been started this server session. */
+  started: boolean;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  totalCount: number;
+  deletedCount: number;
+  progressPercent?: number | null;
+  elapsedSeconds?: number | null;
+  etaSeconds?: number | null;
+  lastError?: string | null;
+}
+
 export type NasFlowDeletionStatusScope = typeof NasFlowDeletionStatusScope[keyof typeof NasFlowDeletionStatusScope];
 
 

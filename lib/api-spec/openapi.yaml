@@ -477,6 +477,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/NasFlowDeletionStatus"
 
+  /flows:
+    delete:
+      operationId: deleteAllFlows
+      tags: [flows]
+      summary: Start background deletion of all already-archived flow records (all NAS)
+      description: >-
+        Purges every already-compressed (archived) row from `flow_records` across
+        all NAS devices, freeing the hot table. The durable gzip archive files on
+        the Archives page are kept, so no IPDR data is lost. Not-yet-compressed
+        (unarchived) rows are left untouched for the compression job. Runs in the
+        background; poll the deletion-status endpoint for progress.
+      responses:
+        "202":
+          description: Deletion started; poll the deletion-status endpoint for progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletionStarted"
+  /flows/deletion-status:
+    get:
+      operationId: getAllFlowDeletionStatus
+      tags: [flows]
+      summary: Live status of the global archived-flow deletion
+      responses:
+        "200":
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllFlowDeletionStatus"
   /flows/search:
     post:
       operationId: searchFlows
@@ -1009,6 +1039,37 @@ components:
       required: [started]
       properties:
         started: { type: boolean }
+
+    AllFlowDeletionStatus:
+      type: object
+      required: [running, started, totalCount, deletedCount]
+      properties:
+        running: { type: boolean }
+        started:
+          type: boolean
+          description: Whether a deletion run has ever been started this server session.
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        totalCount: { type: integer }
+        deletedCount: { type: integer }
+        progressPercent:
+          type: number
+          nullable: true
+        elapsedSeconds:
+          type: integer
+          nullable: true
+        etaSeconds:
+          type: integer
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
 
     NasFlowDeletionStatus:
       type: object

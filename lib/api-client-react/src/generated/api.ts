@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AllFlowDeletionStatus,
   AuditLog,
   CompressionStarted,
   CompressionStatus,
@@ -1842,6 +1843,154 @@ export function useGetNasFlowDeletionStatus<TData = Awaited<ReturnType<typeof ge
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetNasFlowDeletionStatusQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteAllFlowsUrl = () => {
+
+
+
+
+  return `/api/flows`
+}
+
+/**
+ * Purges every already-compressed (archived) row from `flow_records` across all NAS devices, freeing the hot table. The durable gzip archive files on the Archives page are kept, so no IPDR data is lost. Not-yet-compressed (unarchived) rows are left untouched for the compression job. Runs in the background; poll the deletion-status endpoint for progress.
+ * @summary Start background deletion of all already-archived flow records (all NAS)
+ */
+export const deleteAllFlows = async ( options?: RequestInit): Promise<DeletionStarted> => {
+
+  return customFetch<DeletionStarted>(getDeleteAllFlowsUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAllFlowsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAllFlows>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAllFlows>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteAllFlows'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAllFlows>>, void> = () => {
+
+
+          return  deleteAllFlows(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAllFlowsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAllFlows>>>
+
+    export type DeleteAllFlowsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start background deletion of all already-archived flow records (all NAS)
+ */
+export const useDeleteAllFlows = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAllFlows>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAllFlows>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteAllFlowsMutationOptions(options));
+    }
+
+export const getGetAllFlowDeletionStatusUrl = () => {
+
+
+
+
+  return `/api/flows/deletion-status`
+}
+
+/**
+ * @summary Live status of the global archived-flow deletion
+ */
+export const getAllFlowDeletionStatus = async ( options?: RequestInit): Promise<AllFlowDeletionStatus> => {
+
+  return customFetch<AllFlowDeletionStatus>(getGetAllFlowDeletionStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAllFlowDeletionStatusQueryKey = () => {
+    return [
+    `/api/flows/deletion-status`
+    ] as const;
+    }
+
+
+export const getGetAllFlowDeletionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAllFlowDeletionStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllFlowDeletionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAllFlowDeletionStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllFlowDeletionStatus>>> = ({ signal }) => getAllFlowDeletionStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllFlowDeletionStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAllFlowDeletionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAllFlowDeletionStatus>>>
+export type GetAllFlowDeletionStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live status of the global archived-flow deletion
+ */
+
+export function useGetAllFlowDeletionStatus<TData = Awaited<ReturnType<typeof getAllFlowDeletionStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllFlowDeletionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAllFlowDeletionStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

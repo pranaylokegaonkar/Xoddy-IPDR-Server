@@ -1,16 +1,74 @@
-import React from "react";
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey } from "@workspace/api-client-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell } from "lucide-react";
+import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell, Trash2, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
   const { data: topTalkers, isLoading: isLoadingTalkers } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
+
+  const deleteAllFlows = useDeleteAllFlows();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Poll the global purge status while a run is active (or just finished, so the
+  // banner can linger at 100% briefly before clearing).
+  const [purging, setPurging] = useState(false);
+  const wasPurging = useRef(false);
+  const { data: purgeStatus } = useGetAllFlowDeletionStatus({
+    query: {
+      queryKey: getGetAllFlowDeletionStatusQueryKey(),
+      enabled: purging,
+      refetchInterval: purging ? 1000 : false,
+    },
+  });
+
+  useEffect(() => {
+    if (!purgeStatus) return undefined;
+    if (purgeStatus.running) {
+      wasPurging.current = true;
+      return undefined;
+    }
+    // Transitioned from running -> done: refresh dashboard figures, toast, clear.
+    if (wasPurging.current) {
+      wasPurging.current = false;
+      queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+      if (purgeStatus.lastError) {
+        toast({ title: "Purge failed", description: purgeStatus.lastError, variant: "destructive" });
+      } else {
+        toast({ title: "Stored data deleted", description: `${purgeStatus.deletedCount.toLocaleString()} record(s) removed. Archives kept.` });
+      }
+      const t = setTimeout(() => setPurging(false), 2500);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [purgeStatus, queryClient, toast]);
+
+  const confirmPurge = () => {
+    deleteAllFlows.mutate(undefined, {
+      onSuccess: (res) => {
+        setConfirmOpen(false);
+        if (!res.started) {
+          toast({ title: "Already running", description: "A deletion is already in progress." });
+        }
+        queryClient.removeQueries({ queryKey: getGetAllFlowDeletionStatusQueryKey() });
+        wasPurging.current = true;
+        setPurging(true);
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+      },
+    });
+  };
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -47,6 +105,31 @@ export default function Dashboard() {
       </div>
 
       <div className="p-8 pt-4 space-y-6">
+        {purging && purgeStatus && (
+          <Card className="border-destructive/40 bg-destructive/5 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Loader2 className="size-4 text-destructive animate-spin shrink-0" />
+                  <span className="text-sm font-medium">
+                    {purgeStatus.running ? "Deleting all stored data" : "Deletion complete"}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">archives are kept</span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground font-mono shrink-0">
+                  <span>{purgeStatus.deletedCount.toLocaleString()} / {purgeStatus.totalCount.toLocaleString()}</span>
+                  {purgeStatus.elapsedSeconds != null && <span>{purgeStatus.elapsedSeconds}s elapsed</span>}
+                  {purgeStatus.running && purgeStatus.etaSeconds != null && <span>~{purgeStatus.etaSeconds}s left</span>}
+                  <span className="font-semibold text-foreground">{(purgeStatus.progressPercent ?? 0).toFixed(0)}%</span>
+                </div>
+              </div>
+              <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-destructive transition-all duration-500" style={{ width: `${purgeStatus.progressPercent ?? 0}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Top metrics row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard 
@@ -68,6 +151,19 @@ export default function Dashboard() {
             value={isLoadingSummary ? null : formatBytes(summary?.totalBytes || 0)} 
             icon={Database} 
             description="Stored in TSDB"
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setConfirmOpen(true)}
+                disabled={purging || deleteAllFlows.isPending}
+                title="Delete all stored flow data (archives kept)"
+              >
+                {purging ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : <Trash2 className="size-3.5 mr-1" />}
+                Delete all stored data
+              </Button>
+            }
           />
           <MetricCard 
             title="Unread Alerts" 
@@ -178,11 +274,29 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete all stored data?</DialogTitle>
+            <DialogDescription>
+              This removes every already-compressed flow record from the live database, for <span className="font-medium text-foreground">all NAS devices</span>, freeing the stored data volume. The downloadable archive files on the Archives page are kept, so no IPDR data is lost. Records not yet compressed are left untouched. This runs in the background and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmPurge} disabled={deleteAllFlows.isPending}>
+              {deleteAllFlows.isPending ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Trash2 className="size-4 mr-1" />}
+              Delete all stored data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function MetricCard({ title, value, icon: Icon, description, trend, trendUp, alert }: any) {
+function MetricCard({ title, value, icon: Icon, description, trend, trendUp, alert, action }: any) {
   return (
     <Card className={`shadow-sm border-border ${alert ? 'border-destructive/50 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]' : ''}`}>
       <CardContent className="p-6">
@@ -210,6 +324,8 @@ function MetricCard({ title, value, icon: Icon, description, trend, trendUp, ale
               <span className="text-muted-foreground truncate">{description}</span>
             )}
           </div>
+
+          {action && <div className="mt-3 -ml-2">{action}</div>}
         </div>
       </CardContent>
     </Card>

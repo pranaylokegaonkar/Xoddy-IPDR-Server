@@ -403,6 +403,23 @@ export const GetNasFlowDeletionStatusResponse = zod.object({
 
 
 /**
+ * @summary Live status of the global archived-flow deletion
+ */
+export const GetAllFlowDeletionStatusResponse = zod.object({
+  "running": zod.boolean(),
+  "started": zod.boolean().describe('Whether a deletion run has ever been started this server session.'),
+  "startedAt": zod.coerce.date().nullish(),
+  "finishedAt": zod.coerce.date().nullish(),
+  "totalCount": zod.number(),
+  "deletedCount": zod.number(),
+  "progressPercent": zod.number().nullish(),
+  "elapsedSeconds": zod.number().nullish(),
+  "etaSeconds": zod.number().nullish(),
+  "lastError": zod.string().nullish()
+})
+
+
+/**
  * @summary Search IPDR flow records
  */
 export const SearchFlowsBody = zod.object({

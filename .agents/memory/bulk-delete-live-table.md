@@ -20,4 +20,8 @@ is bounded by an id cutoff rather than a naive `while rows remain` loop.
 **How to apply:** any future "purge by filter" / bulk-delete background job on `flow_records` (or any
 other collector-written table) must snapshot a cutoff the same way. Also make the start function
 report whether it actually started (vs. a no-op because one is already running) so audit logs and the
-API response don't claim a job began when it didn't.
+API response don't claim a job began when it didn't. Three jobs now follow this pattern: per-NAS
+delete (Map keyed by nasId), and the global dashboard "delete all stored data" purge (in-process
+singleton, cutoff = max id where archived=1). The global purge deletes **only archived rows** — never
+unarchived ones, which have no gzip copy yet and would be unrecoverable IPDR data; archived rows are
+safe because compression keeps a durable copy in `flow_archives`.

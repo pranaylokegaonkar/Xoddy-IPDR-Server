@@ -6,8 +6,35 @@ import { serializeFlow } from "../lib/serializers";
 import { buildFlowFilters } from "../lib/flow-filters";
 import { buildText, buildExcel, type ExportRow } from "../lib/export";
 import { recordAudit } from "../lib/audit";
+import {
+  startAllFlowDeletion,
+  getAllFlowDeletionStatus,
+} from "../lib/all-flow-deletion";
 
 const router: IRouter = Router();
+
+// Start a global background purge of all already-archived flow records (all NAS).
+// Frees the hot table without losing IPDR data — every archived row has a durable
+// gzip copy in flow_archives. Must NOT run synchronously: millions of rows can
+// outlast the reverse-proxy timeout and surface as a 504, so it fires the
+// background job and responds 202; the client polls /flows/deletion-status.
+router.delete("/flows", async (req, res): Promise<void> => {
+  const started = startAllFlowDeletion();
+  // Only audit when a run actually began; a duplicate request while one is
+  // already in flight is a no-op and must not produce a misleading log entry.
+  if (started) {
+    await recordAudit(
+      req,
+      "flow.delete-all",
+      "Started global deletion of all archived flow records (hot table purge; archives kept)",
+    );
+  }
+  res.status(202).json({ started });
+});
+
+router.get("/flows/deletion-status", (_req, res): void => {
+  res.json(getAllFlowDeletionStatus());
+});
 
 async function nasNameMap(): Promise<Map<number, string>> {
   const rows = await db
