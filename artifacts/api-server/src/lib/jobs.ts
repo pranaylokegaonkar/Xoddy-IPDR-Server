@@ -9,6 +9,11 @@ import {
 } from "@workspace/db";
 import { logger } from "./logger";
 import { recordArchiveLog } from "./archive-log";
+import {
+  createArchiveStorageKey,
+  isArchiveShareConfigured,
+  syncPendingArchivesToShare,
+} from "./archive-storage";
 
 const COMPRESSION_INTERVAL_MS = 1000 * 60 * 15;
 const COMPRESSION_STARTUP_DELAY_MS = 1000 * 60;
@@ -194,6 +199,7 @@ export async function runCompression(): Promise<CompressionResult[]> {
   compressionProgress.lastError = null;
   try {
     const results = await compressBacklog();
+    await syncPendingArchivesToShare();
     if (results.length > 0) {
       await recordArchiveLog(
         "info",
@@ -338,6 +344,9 @@ async function compressBacklog(): Promise<CompressionResult[]> {
             originalBytes,
             compressedBytes,
             payload: compressed.toString("base64"),
+            storageKey: isArchiveShareConfigured()
+              ? createArchiveStorageKey(fileName)
+              : null,
             periodStart,
             periodEnd,
           })
@@ -481,11 +490,15 @@ export function startJobs(): void {
     void hasCompressibleBacklog()
       .then((due) => (due ? runCompression() : []))
       .catch((err) => logger.error({ err }, "Compression job failed"));
+  const syncArchiveShare = () => void syncPendingArchivesToShare();
 
   // Run a check shortly after startup so a freshly (re)started service archives
   // any windows that closed while it was down, rather than waiting a whole
   // interval. Delayed a minute so it doesn't compete with boot/collector init.
-  setTimeout(runCompressionIfDue, COMPRESSION_STARTUP_DELAY_MS);
+  setTimeout(() => {
+    runCompressionIfDue();
+    syncArchiveShare();
+  }, COMPRESSION_STARTUP_DELAY_MS);
 
   // Then poll on a short cadence. Windows close every 2h, but we check every
   // 15 min (the pre-check is a single indexed lookup, a no-op when nothing is
@@ -493,7 +506,10 @@ export function startJobs(): void {
   // ("shortly after", as the UI states). A single 2h timer instead drifts off
   // the window boundaries and — because it resets on every systemd restart —
   // can keep getting cut short before it ever fires.
-  setInterval(runCompressionIfDue, COMPRESSION_INTERVAL_MS);
+  setInterval(() => {
+    runCompressionIfDue();
+    syncArchiveShare();
+  }, COMPRESSION_INTERVAL_MS);
 
   setInterval(() => {
     void checkRecordGeneration().catch((err) =>

@@ -4,8 +4,10 @@ import {
   text,
   integer,
   bigint,
+  index,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const flowArchivesTable = pgTable("flow_archives", {
   id: serial("id").primaryKey(),
@@ -19,12 +21,20 @@ export const flowArchivesTable = pgTable("flow_archives", {
   originalBytes: bigint("original_bytes", { mode: "number" }).notNull(),
   compressedBytes: bigint("compressed_bytes", { mode: "number" }).notNull(),
   payload: text("payload"),
+  // Relative filename on the configured Windows SMB share. Older archive rows
+  // keep a null storageKey and continue to use their database payload.
+  storageKey: text("storage_key"),
   periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
   periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (t) => [
+  // Only new archive rows awaiting delivery to the share are indexed.
+  index("flow_archives_share_pending_idx")
+    .on(t.id)
+    .where(sql`${t.storageKey} IS NOT NULL AND ${t.payload} IS NOT NULL`),
+]);
 
 export type FlowArchiveRow = typeof flowArchivesTable.$inferSelect;
 export type InsertFlowArchive = typeof flowArchivesTable.$inferInsert;

@@ -6,6 +6,7 @@ import { serializeArchive } from "../lib/serializers";
 import { runCompression, getCompressionStatus } from "../lib/jobs";
 import { recordAudit } from "../lib/audit";
 import { recordArchiveLog } from "../lib/archive-log";
+import { deleteArchiveFromShare, readArchiveFromShare } from "../lib/archive-storage";
 
 const router: IRouter = Router();
 
@@ -32,10 +33,37 @@ router.post("/archives/delete", async (req, res): Promise<void> => {
     res.json({ deleted: 0 });
     return;
   }
+  const rows = await db
+    .select({
+      id: flowArchivesTable.id,
+      fileName: flowArchivesTable.fileName,
+      storageKey: flowArchivesTable.storageKey,
+    })
+    .from(flowArchivesTable)
+    .where(inArray(flowArchivesTable.id, ids));
   const deleted = await db
     .delete(flowArchivesTable)
     .where(inArray(flowArchivesTable.id, ids))
     .returning({ id: flowArchivesTable.id });
+  const deletedIds = new Set(deleted.map((row) => row.id));
+  for (const row of rows) {
+    if (!row.storageKey || !deletedIds.has(row.id)) continue;
+    try {
+      await deleteArchiveFromShare(row.storageKey);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      req.log.error(
+        { err: error, archiveId: row.id },
+        "Deleted archive metadata but could not remove its share file",
+      );
+      await recordArchiveLog(
+        "error",
+        "archive.storage.delete_failed",
+        `Could not remove "${row.fileName}" from the Windows share`,
+        detail,
+      );
+    }
+  }
   await recordAudit(req, "archive.delete", `Deleted ${deleted.length} archive(s)`);
   await recordArchiveLog(
     "info",
@@ -56,11 +84,20 @@ router.get("/archives/:id/download", async (req, res): Promise<void> => {
     .select()
     .from(flowArchivesTable)
     .where(eq(flowArchivesTable.id, id));
-  if (!row || !row.payload) {
+  if (!row || (!row.payload && !row.storageKey)) {
     res.status(404).json({ error: "Archive not found" });
     return;
   }
-  const buf = Buffer.from(row.payload, "base64");
+  let buf: Buffer;
+  try {
+    buf = row.payload
+      ? Buffer.from(row.payload, "base64")
+      : await readArchiveFromShare(row.storageKey!);
+  } catch (error) {
+    req.log.error({ err: error, archiveId: row.id }, "Archive file unavailable");
+    res.status(503).json({ error: "Archive storage is unavailable" });
+    return;
+  }
   res.setHeader("Content-Type", "application/gzip");
   res.setHeader(
     "Content-Disposition",
@@ -84,6 +121,23 @@ router.delete("/archives/:id", async (req, res): Promise<void> => {
   if (!row) {
     res.status(404).json({ error: "Archive not found" });
     return;
+  }
+  if (row.storageKey) {
+    try {
+      await deleteArchiveFromShare(row.storageKey);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      req.log.error(
+        { err: error, archiveId: row.id },
+        "Deleted archive metadata but could not remove its share file",
+      );
+      await recordArchiveLog(
+        "error",
+        "archive.storage.delete_failed",
+        `Could not remove "${row.fileName}" from the Windows share`,
+        detail,
+      );
+    }
   }
   await recordAudit(req, "archive.delete", `Deleted archive "${row.fileName}"`);
   await recordArchiveLog(
