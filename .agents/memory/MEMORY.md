@@ -15,3 +15,4 @@
 - [Destructive-job uncertainty](destructive-job-uncertainty.md) — a timeout or vanished progress is an unknown outcome; never claim success or blindly repeat a deletion.
 - [Historical archive search](historical-archive-search.md) — Old Search uses isolated temporary copies; never restore archived records into the live flow table merely to search them.
 - [Dashboard preview samples](preview-sample-data.md) — Top Talkers dummy records are Replit-preview-only, clearly labeled, and never seeded into the flow database.
+- [ISP enrichment](ip-network-enrichment.md) — network-owner labels are public-IP-only; enrichment must not block or repeatedly rerun traffic aggregates.

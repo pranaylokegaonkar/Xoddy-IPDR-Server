@@ -215,9 +215,32 @@ export const GetFlowTrendResponse = zod.array(GetFlowTrendResponseItem)
 export const GetTopTalkersResponseItem = zod.object({
   "ip": zod.string(),
   "count": zod.number(),
-  "bytes": zod.number()
+  "bytes": zod.number(),
+  "ispName": zod.string().optional().describe('Network organization name or an explicit local-address\/lookup status label.'),
+  "asn": zod.number().nullish(),
+  "ispStatus": zod.enum(['resolved', 'pending', 'not_public', 'unavailable']).optional()
 })
 export const GetTopTalkersResponse = zod.array(GetTopTalkersResponseItem)
+
+
+/**
+ * @summary Cached ISP/network names without rerunning traffic queries
+ */
+export const getIpNetworksQueryIpsMax = 500;
+
+
+
+export const GetIpNetworksQueryParams = zod.object({
+  "ips": zod.coerce.string().min(1).max(getIpNetworksQueryIpsMax).describe('Comma-separated list of up to ten IP addresses.')
+})
+
+export const GetIpNetworksResponseItem = zod.object({
+  "ip": zod.string(),
+  "ispName": zod.string(),
+  "asn": zod.number().nullable(),
+  "ispStatus": zod.enum(['resolved', 'pending', 'not_public', 'unavailable'])
+})
+export const GetIpNetworksResponse = zod.array(GetIpNetworksResponseItem)
 
 
 /**

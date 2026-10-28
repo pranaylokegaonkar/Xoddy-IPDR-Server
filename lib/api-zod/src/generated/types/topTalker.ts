@@ -5,9 +5,14 @@
  * Xoddy IPDR Server API - MikroTik Traffic Flow (NetFlow/IPFIX) collector
  * OpenAPI spec version: 0.1.0
  */
+import type { TopTalkerIspStatus } from './topTalkerIspStatus';
 
 export interface TopTalker {
   ip: string;
   count: number;
   bytes: number;
+  /** Network organization name or an explicit local-address/lookup status label. */
+  ispName?: string;
+  asn?: number | null;
+  ispStatus?: TopTalkerIspStatus;
 }

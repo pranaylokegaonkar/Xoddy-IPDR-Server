@@ -6,7 +6,7 @@ const samples: TopTalker[] = [
   { ip: "203.0.113.8", count: 88630, bytes: 5300000000 },
   { ip: "192.0.2.42", count: 54180, bytes: 2800000000 },
   { ip: "198.51.100.77", count: 32760, bytes: 1400000000 },
-];
+].map((row) => ({ ...row, ispName: "Sample IP — no ISP", asn: null, ispStatus: "not_public" as const }));
 
 export function getTopTalkerDisplay(
   talkers: TopTalker[] | undefined,

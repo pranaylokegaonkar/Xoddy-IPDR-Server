@@ -11,6 +11,7 @@ import {
 } from "@workspace/db";
 import { nasStatus } from "../lib/serializers";
 import { collectorPort } from "../lib/collector";
+import { ipNetworkLookup, parseNetworkIps } from "../lib/ip-network";
 
 const router: IRouter = Router();
 
@@ -101,8 +102,19 @@ router.get("/dashboard/top-talkers", async (_req, res) => {
       ip: r.ip,
       count: r.count,
       bytes: Number(r.bytes),
+      ...ipNetworkLookup.get(r.ip),
     })),
   );
+});
+
+router.get("/dashboard/ip-networks", (req, res) => {
+  const ips = parseNetworkIps(req.query.ips);
+  if (!ips) {
+    res.status(400).json({ error: "Provide up to ten valid IP addresses." });
+    return;
+  }
+  res.setHeader("Cache-Control", "no-store");
+  res.json(ips.map((ip) => ({ ip, ...ipNetworkLookup.get(ip) })));
 });
 
 // Read accurate memory figures from /proc/meminfo when available (Linux):

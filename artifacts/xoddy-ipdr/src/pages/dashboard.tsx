@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getTopTalkerDisplay } from "@/lib/top-talker-preview";
+import { useGetIpNetworks, getGetIpNetworksQueryKey } from "@workspace/api-client-react";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -19,8 +20,26 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
   const { data: topTalkers, isLoading: isLoadingTalkers, isError: isTalkersError } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
+  const networkParams = { ips: topTalkers?.map((talker) => talker.ip).join(",") ?? "" };
+  const { data: networks, isError: isNetworkError } = useGetIpNetworks(networkParams, {
+    query: {
+      queryKey: getGetIpNetworksQueryKey(networkParams),
+      enabled: topTalkers?.some((talker) => talker.ispStatus === "pending") ?? false,
+      refetchInterval: (query) => query.state.status !== "error" &&
+        query.state.data?.some((network) => network.ispStatus === "pending") ? 2000 : false,
+    },
+  });
+  const enrichedTalkers = topTalkers?.map((talker) => {
+    const combined = {
+      ...talker,
+      ...(talker.ispStatus === "pending" ? networks?.find((network) => network.ip === talker.ip) : undefined),
+    };
+    return isNetworkError && combined.ispStatus === "pending"
+      ? { ...combined, ispName: "ISP lookup unavailable", asn: null, ispStatus: "unavailable" as const }
+      : combined;
+  });
   const talkerDisplay = getTopTalkerDisplay(
-    topTalkers, import.meta.env.DEV, window.location.hostname, isTalkersError,
+    enrichedTalkers, import.meta.env.DEV, window.location.hostname, isTalkersError,
   );
   const { data: resources, isLoading: isLoadingResources } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
 
@@ -170,19 +189,6 @@ export default function Dashboard() {
             value={isLoadingSummary ? null : formatBytes(summary?.totalBytes || 0)} 
             icon={Database} 
             description="Stored in TSDB"
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => setConfirmOpen(true)}
-                disabled={purging || deleteAllFlows.isPending}
-                title="Delete all stored flow data (archives kept)"
-              >
-                {purging ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : <Trash2 className="size-3.5 mr-1" />}
-                Delete all stored data
-              </Button>
-            }
           />
           <MetricCard 
             title="Unread Alerts" 
@@ -290,16 +296,21 @@ export default function Dashboard() {
                 <div className="divide-y divide-border">
                   {talkerDisplay.talkers.map((talker, i) => (
                     <div key={talker.ip} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
                          <div className="flex items-center justify-center size-6 rounded bg-primary/10 text-primary text-xs font-bold">
                           {i + 1}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium font-mono leading-none">{talker.ip}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium font-mono leading-none break-all">{talker.ip}</p>
+                          <p className="text-xs text-muted-foreground mt-1 break-words"
+                            title={talker.ispStatus === "resolved" ? "Network organization from RIPEstat; not the individual subscriber" : undefined}>
+                            {talker.ispName ?? (talkerDisplay.sample ? "Sample IP — no ISP" : "ISP lookup unavailable")}
+                            {talker.asn != null && <span className="font-mono"> · AS{talker.asn}</span>}
+                          </p>
                           <p className="text-xs text-muted-foreground mt-1">{formatNumber(talker.count)} flows</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 pl-3 text-right">
                         <Badge variant="secondary" className="font-mono text-xs">
                           {formatBytes(talker.bytes)}
                         </Badge>
