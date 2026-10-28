@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Archive, Loader2, Lock, Search } from "lucide-react";
+import { Archive, Loader2, Lock, Search, RotateCcw } from "lucide-react";
 import {
   apiErrorMessage, fmtIst, formatBytes, istToIso, nf,
   MAX_ARCHIVES, MAX_ORIGINAL_BYTES, MAX_RECORDS,
@@ -34,6 +34,19 @@ export function OldSearchArchivePicker({ onPrepared }: { onPrepared: (s: OldSear
 
   const find = useFindOldSearchArchives();
   const prepare = usePrepareOldSearchSession();
+  const clearSearch = () => {
+    if (find.isPending || prepare.isPending) return;
+    setStartDate("");
+    setStartTime("00:00");
+    setEndDate("");
+    setEndTime("23:59");
+    setNasId("all");
+    setRange(null);
+    setSelected(new Set());
+    setConfirmOpen(false);
+    find.reset();
+    prepare.reset();
+  };
   const { data: nasOptions, isLoading: nasLoading } = useGetArchiveNasOptions({
     query: { queryKey: getGetArchiveNasOptionsQueryKey(), staleTime: 30000 },
   });
@@ -79,13 +92,18 @@ export function OldSearchArchivePicker({ onPrepared }: { onPrepared: (s: OldSear
   return (
     <div className="space-y-6">
       <Card className="shadow-sm border-border">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1.5">
           <CardTitle className="text-lg">Archive Window (IST)</CardTitle>
           <CardDescription className="text-xs max-w-3xl">
             Matching uses each flow's <span className="font-medium text-foreground">end time</span>. Archives are
             listed when their window overlaps your range, and the temporary workspace keeps only flows whose end
             time falls inside it. A flow that started before your start but ended inside it is included.
           </CardDescription>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={clearSearch} disabled={find.isPending || prepare.isPending}>
+            <RotateCcw className="size-4 mr-2" /> Clear Search
+          </Button>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleFind} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4 items-end">

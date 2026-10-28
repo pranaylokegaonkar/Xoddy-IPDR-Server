@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileSpreadsheet, FileText, Loader2, Search } from "lucide-react";
+import { FileSpreadsheet, FileText, Loader2, Search, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   apiErrorMessage, emptyOldFilters, filtersToPayload, fmtIst, nf, PAGE_SIZE, type OldFilters,
@@ -52,6 +52,16 @@ export function OldSearchWorkspace({ session, onBusyChange, onReleasedByExport }
 
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); run(filtersToPayload(filters), 1); };
 
+  const clearSearch = () => {
+    if (operationPending) return;
+    setFilters({ ...emptyOldFilters });
+    setApplied(null);
+    setPage(1);
+    setReleaseAfter(false);
+    search.reset();
+    exporter.reset();
+  };
+
   const doExport = (fmt: "text" | "excel") => {
     if (!applied || operationPending) return;
     const body = { ...applied, format: fmt, ...(releaseAfter ? { releaseAfterExport: true } : {}) };
@@ -82,12 +92,18 @@ export function OldSearchWorkspace({ session, onBusyChange, onReleasedByExport }
   return (
     <>
       <Card className="shadow-sm border-border">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1.5">
           <CardTitle className="text-lg">Filter Criteria</CardTitle>
           <CardDescription className="text-xs">
             Date and time filters apply daily in IST and narrow within the workspace window; the window itself is always enforced.
             Exports retain the original stored flow dates and UTC ISO timestamps.
           </CardDescription>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={clearSearch} disabled={operationPending}
+            title="Clear filters and results without releasing the temporary workspace">
+            <RotateCcw className="size-4 mr-2" /> Clear Search
+          </Button>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">

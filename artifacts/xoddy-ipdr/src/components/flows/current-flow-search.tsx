@@ -6,18 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, FileText, FileSpreadsheet } from "lucide-react";
+import { Download, Search, FileText, FileSpreadsheet, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function CurrentFlowSearch() {
-  const { toast } = useToast();
-  const searchFlows = useSearchFlows();
-  const { data: nasList } = useGetNasList({ query: { queryKey: getGetNasListQueryKey() } });
-
-  const [filters, setFilters] = useState({
+const initialFilters = {
     srcIp: "",
     dstIp: "",
     srcNatIp: "",
@@ -27,10 +22,23 @@ export function CurrentFlowSearch() {
     dateTo: "",
     startTime: "",
     endTime: ""
-  });
+};
+
+export function CurrentFlowSearch() {
+  const { toast } = useToast();
+  const searchFlows = useSearchFlows();
+  const { data: nasList } = useGetNasList({ query: { queryKey: getGetNasListQueryKey() } });
+  const [filters, setFilters] = useState({ ...initialFilters });
 
   const [page, setPage] = useState(1);
   const pageSize = 50;
+
+  const handleClearSearch = () => {
+    if (searchFlows.isPending) return;
+    setFilters({ ...initialFilters });
+    setPage(1);
+    searchFlows.reset();
+  };
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -101,8 +109,11 @@ export function CurrentFlowSearch() {
     <>
       <div className="space-y-6">
         <Card className="shadow-sm border-border">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-4 flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
             <CardTitle className="text-lg">Filter Criteria</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={handleClearSearch} disabled={searchFlows.isPending}>
+              <RotateCcw className="size-4 mr-2" /> Clear Search
+            </Button>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSearch} className="space-y-4">

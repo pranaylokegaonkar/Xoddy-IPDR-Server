@@ -15,6 +15,12 @@ Put **Current Day Search** and **Old Search** underneath **Search Flows** in the
 
 **How to apply:** Keep both modes accessible from navigation when revising the search screens.
 
+Keep **Clear Search** separate from releasing an active temporary workspace.
+
+**Why:** Resetting filters should not discard prepared historical data or remove its archive-deletion protection.
+
+**How to apply:** Clear filter inputs, results, errors and pagination without releasing the workspace; keep release as a separate confirmed action.
+
 Use flow **end time** for the archive-selection window and its exact timestamp boundaries, with IST displayed explicitly.
 
 **Why:** Archives are bucketed by end time; using start time to select archive windows can omit the required files.
