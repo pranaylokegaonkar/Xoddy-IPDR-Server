@@ -14,3 +14,4 @@
 - [Archive list performance](archive-list-performance.md) — few archive rows can still contain huge payloads; list metadata without fetching compressed contents.
 - [Destructive-job uncertainty](destructive-job-uncertainty.md) — a timeout or vanished progress is an unknown outcome; never claim success or blindly repeat a deletion.
 - [Historical archive search](historical-archive-search.md) — Old Search uses isolated temporary copies; never restore archived records into the live flow table merely to search them.
+- [Dashboard preview samples](preview-sample-data.md) — Top Talkers dummy records are Replit-preview-only, clearly labeled, and never seeded into the flow database.

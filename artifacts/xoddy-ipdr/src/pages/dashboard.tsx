@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getTopTalkerDisplay } from "@/lib/top-talker-preview";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -18,7 +19,10 @@ export default function Dashboard() {
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
-  const { data: topTalkers, isLoading: isLoadingTalkers } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
+  const { data: topTalkers, isLoading: isLoadingTalkers, isError: isTalkersError } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
+  const talkerDisplay = getTopTalkerDisplay(
+    topTalkers, import.meta.env.DEV, window.location.hostname, isTalkersError,
+  );
   const { data: resources, isLoading: isLoadingResources } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
 
   useEffect(() => {
@@ -275,8 +279,13 @@ export default function Dashboard() {
 
           <Card className="shadow-sm border-border">
             <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
-              <CardTitle className="text-base font-semibold">Top Talkers (Source IP)</CardTitle>
-              <CardDescription>Highest bandwidth consumers (last 24h)</CardDescription>
+              <CardTitle className="text-base font-semibold">
+                Top Talkers (Source IP)
+                {talkerDisplay.sample && <Badge variant="outline" className="ml-2 text-[10px]">Sample</Badge>}
+              </CardTitle>
+              <CardDescription>
+                {talkerDisplay.sample ? "Sample data (Replit preview only)" : "Highest bandwidth consumers (last 24h)"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {isLoadingTalkers ? (
@@ -285,9 +294,9 @@ export default function Dashboard() {
                   <Skeleton className="h-10 w-full" />
                   <Skeleton className="h-10 w-full" />
                 </div>
-              ) : topTalkers && topTalkers.length > 0 ? (
+              ) : talkerDisplay.talkers.length > 0 ? (
                 <div className="divide-y divide-border">
-                  {topTalkers.map((talker, i) => (
+                  {talkerDisplay.talkers.map((talker, i) => (
                     <div key={talker.ip} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3">
                          <div className="flex items-center justify-center size-6 rounded bg-primary/10 text-primary text-xs font-bold">

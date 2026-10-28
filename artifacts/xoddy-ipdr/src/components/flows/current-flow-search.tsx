@@ -109,11 +109,8 @@ export function CurrentFlowSearch() {
     <>
       <div className="space-y-6">
         <Card className="shadow-sm border-border">
-          <CardHeader className="pb-4 flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+          <CardHeader className="pb-4">
             <CardTitle className="text-lg">Filter Criteria</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={handleClearSearch} disabled={searchFlows.isPending}>
-              <RotateCcw className="size-4 mr-2" /> Clear Search
-            </Button>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSearch} className="space-y-4">
@@ -164,12 +161,15 @@ export function CurrentFlowSearch() {
                   <Input type="time" value={filters.endTime} onChange={e => setFilters({...filters, endTime: e.target.value})} />
                 </div>
                 
-                <div className="flex items-end space-x-2">
-                  <Button type="submit" className="w-full flex items-center gap-2" disabled={searchFlows.isPending}>
+              </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="submit" className="flex items-center gap-2" disabled={searchFlows.isPending}>
                     <Search className="size-4" /> Search
                   </Button>
+                  <Button type="button" variant="outline" onClick={handleClearSearch} disabled={searchFlows.isPending}>
+                    <RotateCcw className="size-4 mr-2" /> Clear Search
+                  </Button>
                 </div>
-              </div>
             </form>
           </CardContent>
         </Card>
