@@ -99,7 +99,7 @@ export default function Dashboard() {
         </div>
         
         {summary && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-4">
             <div
               className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md border border-border"
               title="Application version"
