@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
+import {
+  createReadStream,
+} from "node:fs";
 import { readFile, rename, rm, stat, statfs, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { Readable, Writable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { createGunzip } from "node:zlib";
 import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { db, flowArchivesTable } from "@workspace/db";
 import { logger } from "./logger";
@@ -76,6 +82,50 @@ export async function readArchiveFromShare(storageKey: string): Promise<Buffer> 
 
 export async function deleteArchiveFromShare(storageKey: string): Promise<void> {
   await rm(archivePath(await archiveRoot(), storageKey), { force: true });
+}
+
+export async function isArchiveDurable(
+  archive: {
+    payload: string | null;
+    storageKey: string | null;
+    compressedBytes: number;
+  },
+): Promise<boolean> {
+  try {
+    let source: Readable;
+    if (archive.payload !== null) {
+      const bytes = Buffer.from(archive.payload, "base64");
+      if (
+        bytes.length !== archive.compressedBytes ||
+        bytes[0] !== 0x1f ||
+        bytes[1] !== 0x8b
+      ) {
+        return false;
+      }
+      source = Readable.from([bytes]);
+    } else {
+      if (!archive.storageKey) return false;
+      const filePath = archivePath(await archiveRoot(), archive.storageKey);
+      const file = await stat(filePath);
+      if (!file.isFile() || file.size !== archive.compressedBytes) return false;
+      source = createReadStream(filePath);
+    }
+
+    // Stream-decompress to a discard sink so gzip CRC/data errors are found
+    // without holding the full uncompressed archive in memory.
+    await pipeline(
+      source,
+      createGunzip(),
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

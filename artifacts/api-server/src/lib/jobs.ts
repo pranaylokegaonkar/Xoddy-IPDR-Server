@@ -14,6 +14,7 @@ import {
   isArchiveShareConfigured,
   syncPendingArchivesToShare,
 } from "./archive-storage";
+import { deleteExpiredArchivedFlowRows } from "./flow-retention";
 
 const COMPRESSION_INTERVAL_MS = 1000 * 60 * 15;
 const COMPRESSION_STARTUP_DELAY_MS = 1000 * 60;
@@ -78,6 +79,7 @@ export interface CompressionResult {
 // until it completes. Returns every archive created (newest window last), or an
 // empty array when there is nothing to compress.
 let compressionRunning = false;
+let flowRetentionRunning = false;
 
 // Live progress of the in-process compression run, surfaced to the UI so the
 // operator can see which window is being compressed and roughly how long the
@@ -180,6 +182,13 @@ export function getCompressionStatus(): CompressionStatus {
 // archives and waste DB/CPU). Single service process, so an in-process flag is
 // sufficient.
 export async function runCompression(): Promise<CompressionResult[]> {
+  if (compressionRunning) {
+    logger.info("Compression already in progress; skipping overlapping run");
+    return [];
+  }
+  while (flowRetentionRunning) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
   if (compressionRunning) {
     logger.info("Compression already in progress; skipping overlapping run");
     return [];
@@ -486,19 +495,47 @@ async function hasCompressibleBacklog(): Promise<boolean> {
 }
 
 export function startJobs(): void {
-  const runCompressionIfDue = () =>
-    void hasCompressibleBacklog()
-      .then((due) => (due ? runCompression() : []))
-      .catch((err) => logger.error({ err }, "Compression job failed"));
-  const syncArchiveShare = () => void syncPendingArchivesToShare();
+  const runCompressionIfDue = async () => {
+    try {
+      if (await hasCompressibleBacklog()) await runCompression();
+    } catch (err) {
+      logger.error({ err }, "Compression job failed");
+    }
+  };
+  const runFlowRetentionCleanup = async () => {
+    if (compressionRunning || flowRetentionRunning) return;
+    flowRetentionRunning = true;
+    try {
+      const deleted = await deleteExpiredArchivedFlowRows();
+      if (deleted > 0) {
+        logger.info(
+          { deleted },
+          "Completed automatic archived-flow retention cleanup",
+        );
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      logger.error({ err }, "Automatic archived-flow retention cleanup failed");
+      await recordArchiveLog(
+        "error",
+        "flow.cleanup.failed",
+        "Automatic cleanup of original archived flows failed",
+        detail,
+      );
+    } finally {
+      flowRetentionRunning = false;
+    }
+  };
+  const runMaintenance = async () => {
+    await runCompressionIfDue();
+    await runFlowRetentionCleanup();
+    await syncPendingArchivesToShare();
+  };
 
   // Run a check shortly after startup so a freshly (re)started service archives
   // any windows that closed while it was down, rather than waiting a whole
   // interval. Delayed a minute so it doesn't compete with boot/collector init.
-  setTimeout(() => {
-    runCompressionIfDue();
-    syncArchiveShare();
-  }, COMPRESSION_STARTUP_DELAY_MS);
+  setTimeout(() => void runMaintenance(), COMPRESSION_STARTUP_DELAY_MS);
 
   // Then poll on a short cadence. Windows close every 2h, but we check every
   // 15 min (the pre-check is a single indexed lookup, a no-op when nothing is
@@ -506,10 +543,7 @@ export function startJobs(): void {
   // ("shortly after", as the UI states). A single 2h timer instead drifts off
   // the window boundaries and — because it resets on every systemd restart —
   // can keep getting cut short before it ever fires.
-  setInterval(() => {
-    runCompressionIfDue();
-    syncArchiveShare();
-  }, COMPRESSION_INTERVAL_MS);
+  setInterval(() => void runMaintenance(), COMPRESSION_INTERVAL_MS);
 
   setInterval(() => {
     void checkRecordGeneration().catch((err) =>
@@ -517,5 +551,7 @@ export function startJobs(): void {
     );
   }, NOTIFY_INTERVAL_MS);
 
-  logger.info("Background jobs scheduled (compression check 15m, notify 15m)");
+  logger.info(
+    "Background jobs scheduled (compression check 15m, archive cleanup 15m with 1d retention, notify 15m)",
+  );
 }
