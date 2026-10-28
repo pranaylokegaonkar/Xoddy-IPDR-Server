@@ -15,10 +15,16 @@ import { useToast } from "@/hooks/use-toast";
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
   const { data: topTalkers, isLoading: isLoadingTalkers } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
   const { data: resources, isLoading: isLoadingResources } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const deleteAllFlows = useDeleteAllFlows();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -104,9 +110,18 @@ export default function Dashboard() {
               <div className="size-2 rounded-full bg-green-500 animate-pulse"></div>
               <span className="text-xs font-medium font-mono text-muted-foreground">UDP:{summary.collectorPort}</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-md border border-primary/20">
-              <ShieldCheck className="size-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">DOT IPDR Compliant</span>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-md border border-primary/20">
+                <ShieldCheck className="size-4" />
+                <span className="text-xs font-semibold uppercase tracking-wider">DOT IPDR Compliant</span>
+              </div>
+              <time
+                className="text-[11px] font-mono text-muted-foreground whitespace-nowrap"
+                dateTime={currentDateTime.toISOString()}
+                title="Local date and time"
+              >
+                {format(currentDateTime, "dd MMM yyyy, HH:mm:ss")}
+              </time>
             </div>
           </div>
         )}
