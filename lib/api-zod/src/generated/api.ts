@@ -789,6 +789,39 @@ export const GetArchivesResponse = zod.array(GetArchivesResponseItem)
 
 
 /**
+ * @summary Upload and validate a .json.gz flow archive without restoring live flows
+ */
+export const uploadArchiveQueryFileNameMax = 200;
+
+
+export const uploadArchiveQueryFileNameRegExp = new RegExp('^.+\\.[jJ][sS][oO][nN]\\.[gG][zZ]$');
+
+
+export const UploadArchiveQueryParams = zod.object({
+  "fileName": zod.coerce.string().max(uploadArchiveQueryFileNameMax).regex(uploadArchiveQueryFileNameRegExp)
+})
+
+
+/**
+ * @summary Get the current user's archive upload result
+ */
+export const GetArchiveUploadStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetArchiveUploadStatusResponse = zod.object({
+  "id": zod.string(),
+  "fileName": zod.string(),
+  "state": zod.enum(['validating', 'complete', 'error']),
+  "recordCount": zod.number(),
+  "archiveId": zod.number().nullable(),
+  "error": zod.string().nullable(),
+  "periodStart": zod.coerce.date().nullable(),
+  "periodEnd": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary List current and historical archive NAS devices without flow counts
  */
 export const GetArchiveNasOptionsResponseItem = zod.object({

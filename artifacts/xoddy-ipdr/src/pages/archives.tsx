@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArchiveFilters } from "@/components/archives/archive-filters";
 import { ArchiveDeletionControls } from "@/components/archives/archive-deletion-controls";
+import { ArchiveUpload } from "@/components/archives/archive-upload";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Archive as ArchiveIcon, FileArchive, Loader2, Zap, Download, Trash2 } from "lucide-react";
@@ -240,6 +241,7 @@ export default function Archives() {
           </p>
         </div>
         <div className="flex items-start gap-2">
+          <ArchiveUpload onUploaded={refreshArchives} />
           <ArchiveDeletionControls
             selectedIds={Array.from(selected)}
             onStarted={() => setSelected(new Set())}

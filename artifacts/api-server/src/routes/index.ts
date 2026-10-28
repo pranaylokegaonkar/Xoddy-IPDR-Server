@@ -11,6 +11,7 @@ import notificationsRouter from "./notifications";
 import archivesRouter from "./archives";
 import archiveLogsRouter from "./archive-logs";
 import oldSearchRouter from "./old-search";
+import archiveUploadRouter from "./archive-upload";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,7 @@ router.use(loginRouter);
 
 // Everything below requires an authenticated session.
 router.use(requireAuth);
+router.use(archiveUploadRouter);
 router.use(sessionRouter);
 router.use(auditRouter);
 router.use(dashboardRouter);

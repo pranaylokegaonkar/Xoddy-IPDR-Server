@@ -4,6 +4,7 @@ import {
   text,
   integer,
   bigint,
+  boolean,
   index,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -21,6 +22,8 @@ export const flowArchivesTable = pgTable("flow_archives", {
   originalBytes: bigint("original_bytes", { mode: "number" }).notNull(),
   compressedBytes: bigint("compressed_bytes", { mode: "number" }).notNull(),
   payload: text("payload"),
+  // Imported backups are searchable but are never evidence for deleting live rows.
+  isImported: boolean("is_imported").notNull().default(false),
   // Relative filename on the configured Windows SMB share. Older archive rows
   // keep a null storageKey and continue to use their database payload.
   storageKey: text("storage_key"),

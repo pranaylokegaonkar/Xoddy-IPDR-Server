@@ -60,3 +60,32 @@ database automatically.
 
 Remove any revoked GitHub token from local environment files; Git fetch
 authentication is taken from the configured Git remote instead.
+
+### Archive file uploads
+
+Data Archives accepts **only `.json.gz`** backups in Xoddy's JSON-array flow format:
+64 MiB compressed, 512 MiB expanded, and 1,000,000 records per file. Validation
+and saving run in the background. Uploads use the existing database payload and,
+when configured, the same Windows-share delivery queue as automatic archives.
+Existing archive files are not overwritten and live flow records are not restored.
+Imported files are marked separately and cannot qualify original flow rows for
+the automatic one-day retention cleanup. The normal updater applies the new
+`flow_archives.is_imported` metadata column; existing archives default to false.
+
+If Ubuntu Nginx returns **413 Request Entity Too Large**, add this directive
+inside the application's existing `server` or API `location` block:
+
+```nginx
+client_max_body_size 64m;
+```
+
+Then validate and reload the configuration:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Do not replace your entire Nginx configuration. An uploaded historical archive
+may be outside today's default filters: select its date/NAS and click **Show Data**,
+or use **Old Search**. If progress disappears after a server restart, check the
+archive list before retrying; missing progress is not proof that nothing was saved.

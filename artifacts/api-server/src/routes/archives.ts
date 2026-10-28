@@ -273,10 +273,7 @@ router.get("/archives/:id/download", async (req, res): Promise<void> => {
     return;
   }
   res.setHeader("Content-Type", "application/gzip");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${row.fileName}"`,
-  );
+  res.attachment(row.fileName);
   res.setHeader("Content-Length", String(buf.length));
   await recordAudit(req, "archive.download", `Downloaded archive "${row.fileName}"`);
   res.send(buf);

@@ -521,6 +521,26 @@ export interface FlowArchive {
   createdAt: string;
 }
 
+export type ArchiveUploadStatusState = typeof ArchiveUploadStatusState[keyof typeof ArchiveUploadStatusState];
+
+
+export const ArchiveUploadStatusState = {
+  validating: 'validating',
+  complete: 'complete',
+  error: 'error',
+} as const;
+
+export interface ArchiveUploadStatus {
+  id: string;
+  fileName: string;
+  state: ArchiveUploadStatusState;
+  recordCount: number;
+  archiveId: number | null;
+  error: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+}
+
 export interface DeleteArchivesInput {
   /** @maxItems 10000 */
   ids: number[];
@@ -655,6 +675,14 @@ startDate?: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 endDate?: string;
+};
+
+export type UploadArchiveParams = {
+/**
+ * @maxLength 200
+ * @pattern ^.+\.[jJ][sS][oO][nN]\.[gG][zZ]$
+ */
+fileName: string;
 };
 
 export type GetArchiveCoverageParams = {

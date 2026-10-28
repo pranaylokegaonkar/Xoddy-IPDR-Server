@@ -43,6 +43,7 @@ export async function deleteExpiredArchivedFlowRows(): Promise<number> {
       archiveRecordCount: sql<number>`cast(sum(${flowArchivesTable.recordCount}) as int)`,
     })
     .from(flowArchivesTable)
+    .where(eq(flowArchivesTable.isImported, false))
     .groupBy(flowArchivesTable.periodStart, flowArchivesTable.periodEnd)
     .having(sql`max(${flowArchivesTable.createdAt}) <= ${cutoff}`)
     .orderBy(asc(flowArchivesTable.periodStart))
@@ -106,6 +107,7 @@ export async function deleteExpiredArchivedFlowRows(): Promise<number> {
         and(
           eq(flowArchivesTable.periodStart, window.periodStart),
           eq(flowArchivesTable.periodEnd, window.periodEnd),
+          eq(flowArchivesTable.isImported, false),
         ),
       );
 

@@ -788,6 +788,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /archives/upload:
+    post:
+      operationId: uploadArchive
+      tags: [archives]
+      summary: Upload and validate a .json.gz flow archive without restoring live flows
+      parameters:
+        - in: query
+          name: fileName
+          required: true
+          schema: { type: string, maxLength: 200, pattern: '^.+\.[jJ][sS][oO][nN]\.[gG][zZ]$' }
+      requestBody:
+        required: true
+        content:
+          application/gzip:
+            schema: { type: string, format: binary }
+      responses:
+        "202":
+          description: Upload accepted for background validation and saving
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArchiveUploadStatus" }
+        "400": { description: Invalid filename or empty file }
+        "409": { description: Another upload is active }
+        "413": { description: File exceeds 64 MiB }
+        "415": { description: Unsupported content type }
+  /archives/uploads/{id}:
+    get:
+      operationId: getArchiveUploadStatus
+      tags: [archives]
+      summary: Get the current user's archive upload result
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Upload progress or result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArchiveUploadStatus" }
+        "404": { description: "Unknown, expired or unowned upload" }
   /archives/nas-options:
     get:
       operationId: getArchiveNasOptions
@@ -1419,6 +1461,18 @@ components:
         periodEnd: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
 
+    ArchiveUploadStatus:
+      type: object
+      required: [id, fileName, state, recordCount, archiveId, error, periodStart, periodEnd]
+      properties:
+        id: { type: string }
+        fileName: { type: string }
+        state: { type: string, enum: [validating, complete, error] }
+        recordCount: { type: integer }
+        archiveId: { type: integer, nullable: true }
+        error: { type: string, nullable: true }
+        periodStart: { type: string, format: date-time, nullable: true }
+        periodEnd: { type: string, format: date-time, nullable: true }
     DeleteArchivesInput:
       type: object
       required: [ids]

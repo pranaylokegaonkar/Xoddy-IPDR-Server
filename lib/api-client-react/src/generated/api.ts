@@ -28,6 +28,7 @@ import type {
   ArchiveLogPage,
   ArchiveNasOption,
   ArchiveRangeInput,
+  ArchiveUploadStatus,
   ArchiveWorkspaceInput,
   AuditLogPage,
   CompressionStarted,
@@ -64,6 +65,7 @@ import type {
   SystemResources,
   SystemUser,
   TopTalker,
+  UploadArchiveParams,
   UserInput,
   UserType,
   UserUpdate
@@ -3163,6 +3165,162 @@ export function useGetArchives<TData = Awaited<ReturnType<typeof getArchives>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetArchivesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUploadArchiveUrl = (params: UploadArchiveParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/archives/upload?${stringifiedParams}` : `/api/archives/upload`
+}
+
+/**
+ * @summary Upload and validate a .json.gz flow archive without restoring live flows
+ */
+export const uploadArchive = async (uploadArchiveBody: Blob,
+    params: UploadArchiveParams, options?: RequestInit): Promise<ArchiveUploadStatus> => {
+
+  return customFetch<ArchiveUploadStatus>(getUploadArchiveUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/gzip', ...options?.headers },
+    body: JSON.stringify(
+      uploadArchiveBody,)
+  }
+);}
+
+
+
+
+export const getUploadArchiveMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadArchive>>, TError,{data: BodyType<Blob>;params: UploadArchiveParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadArchive>>, TError,{data: BodyType<Blob>;params: UploadArchiveParams}, TContext> => {
+
+const mutationKey = ['uploadArchive'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadArchive>>, {data: BodyType<Blob>;params: UploadArchiveParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  uploadArchive(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadArchiveMutationResult = NonNullable<Awaited<ReturnType<typeof uploadArchive>>>
+    export type UploadArchiveMutationBody = BodyType<Blob>
+    export type UploadArchiveMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload and validate a .json.gz flow archive without restoring live flows
+ */
+export const useUploadArchive = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadArchive>>, TError,{data: BodyType<Blob>;params: UploadArchiveParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadArchive>>,
+        TError,
+        {data: BodyType<Blob>;params: UploadArchiveParams},
+        TContext
+      > => {
+      return useMutation(getUploadArchiveMutationOptions(options));
+    }
+
+export const getGetArchiveUploadStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/archives/uploads/${id}`
+}
+
+/**
+ * @summary Get the current user's archive upload result
+ */
+export const getArchiveUploadStatus = async (id: string, options?: RequestInit): Promise<ArchiveUploadStatus> => {
+
+  return customFetch<ArchiveUploadStatus>(getGetArchiveUploadStatusUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArchiveUploadStatusQueryKey = (id: string,) => {
+    return [
+    `/api/archives/uploads/${id}`
+    ] as const;
+    }
+
+
+export const getGetArchiveUploadStatusQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveUploadStatus>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveUploadStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArchiveUploadStatusQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveUploadStatus>>> = ({ signal }) => getArchiveUploadStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArchiveUploadStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArchiveUploadStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getArchiveUploadStatus>>>
+export type GetArchiveUploadStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the current user's archive upload result
+ */
+
+export function useGetArchiveUploadStatus<TData = Awaited<ReturnType<typeof getArchiveUploadStatus>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveUploadStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArchiveUploadStatusQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -48,7 +48,7 @@ export async function consumeArchive(
   maxExpandedBytes: number,
   signal: AbortSignal,
   consume: (value: unknown) => Promise<void>,
-): Promise<void> {
+): Promise<number> {
   let expanded = 0;
   const limit = new Transform({
     transform(chunk: Buffer, _encoding, callback) {
@@ -84,6 +84,7 @@ export async function consumeArchive(
       if (++seen % 500 === 0) await yieldToCollector();
     }
   }, { signal });
+  return expanded;
 }
 
 const istClock = (timestamp: string) =>
