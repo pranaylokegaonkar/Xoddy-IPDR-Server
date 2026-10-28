@@ -199,17 +199,6 @@ export const GetDashboardSummaryResponse = zod.object({
 
 
 /**
- * @summary Flow volume trend over the last 24 hours
- */
-export const GetFlowTrendResponseItem = zod.object({
-  "time": zod.string(),
-  "count": zod.number(),
-  "bytes": zod.number()
-})
-export const GetFlowTrendResponse = zod.array(GetFlowTrendResponseItem)
-
-
-/**
  * @summary Top source IP addresses by traffic volume over the last 24 hours
  */
 export const GetTopTalkersResponseItem = zod.object({

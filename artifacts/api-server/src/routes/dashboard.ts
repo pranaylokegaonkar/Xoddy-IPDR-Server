@@ -88,27 +88,6 @@ router.get("/dashboard/summary", async (_req, res) => {
   });
 });
 
-router.get("/dashboard/flow-trend", async (_req, res) => {
-  const rows = await db
-    .select({
-      hour: sql<string>`to_char(date_trunc('hour', ${flowRecordsTable.startTime}), 'YYYY-MM-DD"T"HH24:00')`,
-      count: sql<number>`cast(count(*) as int)`,
-      bytes: sql<number>`coalesce(sum(${flowRecordsTable.bytes}), 0)`,
-    })
-    .from(flowRecordsTable)
-    .where(sql`${flowRecordsTable.startTime} >= now() - interval '24 hours'`)
-    .groupBy(sql`date_trunc('hour', ${flowRecordsTable.startTime})`)
-    .orderBy(sql`date_trunc('hour', ${flowRecordsTable.startTime})`);
-
-  res.json(
-    rows.map((r) => ({
-      time: r.hour,
-      count: r.count,
-      bytes: Number(r.bytes),
-    })),
-  );
-});
-
 // Read accurate memory figures from /proc/meminfo when available (Linux):
 // MemAvailable reflects memory actually reclaimable for new work, so it matches
 // what `free -h` reports far better than os.freemem() (which excludes cache and

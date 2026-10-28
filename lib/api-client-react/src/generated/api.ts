@@ -44,7 +44,6 @@ import type {
   FlowExport,
   FlowSearch,
   FlowSearchResult,
-  FlowTrendPoint,
   GetArchiveCoverageParams,
   GetArchiveLogsParams,
   GetArchivesParams,
@@ -694,83 +693,6 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardSummaryQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-
-export const getGetFlowTrendUrl = () => {
-
-
-
-
-  return `/api/dashboard/flow-trend`
-}
-
-/**
- * @summary Flow volume trend over the last 24 hours
- */
-export const getFlowTrend = async ( options?: RequestInit): Promise<FlowTrendPoint[]> => {
-
-  return customFetch<FlowTrendPoint[]>(getGetFlowTrendUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetFlowTrendQueryKey = () => {
-    return [
-    `/api/dashboard/flow-trend`
-    ] as const;
-    }
-
-
-export const getGetFlowTrendQueryOptions = <TData = Awaited<ReturnType<typeof getFlowTrend>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFlowTrend>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetFlowTrendQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFlowTrend>>> = ({ signal }) => getFlowTrend({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFlowTrend>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetFlowTrendQueryResult = NonNullable<Awaited<ReturnType<typeof getFlowTrend>>>
-export type GetFlowTrendQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Flow volume trend over the last 24 hours
- */
-
-export function useGetFlowTrend<TData = Awaited<ReturnType<typeof getFlowTrend>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFlowTrend>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetFlowTrendQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

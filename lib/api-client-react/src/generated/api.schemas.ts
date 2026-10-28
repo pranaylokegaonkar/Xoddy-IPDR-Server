@@ -143,12 +143,6 @@ export interface DashboardSummary {
   lastFlowAt?: string | null;
 }
 
-export interface FlowTrendPoint {
-  time: string;
-  count: number;
-  bytes: number;
-}
-
 export type TopTalkerIspStatus = typeof TopTalkerIspStatus[keyof typeof TopTalkerIspStatus];
 
 

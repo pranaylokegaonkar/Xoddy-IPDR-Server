@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Cpu, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { Card, CardContent } from "@/components/ui/card";
+import { Server, Activity, ArrowUpRight, ArrowDownRight, ShieldCheck, Cpu, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
+import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +14,6 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
-  const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
   const { data: resources, isLoading: isLoadingResources, isError: isResourcesError } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
   const cpu = isResourcesError ? null : resources?.cpu;
 
@@ -200,65 +198,6 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Charts row */}
-        <div className="grid grid-cols-1 gap-6">
-          <Card className="flex flex-col shadow-sm border-border overflow-hidden">
-            <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">Flow Volume Trend (24h)</CardTitle>
-                {summary?.lastFlowAt && (
-                  <div className="flex items-center text-xs text-muted-foreground gap-1.5">
-                    <Clock className="size-3" />
-                    Last flow: {format(parseISO(summary.lastFlowAt), "HH:mm:ss")}
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="p-6 flex-1 min-h-[300px]">
-              {isLoadingTrend ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Skeleton className="w-full h-full rounded-md" />
-                </div>
-              ) : trend && trend.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="time" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      tickMargin={10}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      tickFormatter={(val) => formatNumber(val)}
-                    />
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                      formatter={(value: number) => [formatNumber(value), 'Flows']}
-                    />
-                    <Area type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                  <Activity className="size-8 mb-2 opacity-20" />
-                  <p className="text-sm">No flow data in the last 24 hours.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-        </div>
       </div>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>

@@ -38,7 +38,6 @@ export * from './flowExportFormat';
 export * from './flowRecord';
 export * from './flowSearch';
 export * from './flowSearchResult';
-export * from './flowTrendPoint';
 export * from './getArchiveCoverageParams';
 export * from './getArchiveLogsLevel';
 export * from './getArchiveLogsParams';

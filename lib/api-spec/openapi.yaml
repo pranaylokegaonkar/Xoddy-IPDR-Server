@@ -153,20 +153,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
-  /dashboard/flow-trend:
-    get:
-      operationId: getFlowTrend
-      tags: [dashboard]
-      summary: Flow volume trend over the last 24 hours
-      responses:
-        "200":
-          description: Trend points
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/FlowTrendPoint"
   /dashboard/top-talkers:
     get:
       operationId: getTopTalkers
@@ -1145,13 +1131,6 @@ components:
         archivedBatches: { type: integer }
         collectorPort: { type: integer }
         lastFlowAt: { type: ["string", "null"], format: date-time }
-    FlowTrendPoint:
-      type: object
-      required: [time, count, bytes]
-      properties:
-        time: { type: string }
-        count: { type: integer }
-        bytes: { type: integer }
     TopTalker:
       type: object
       required: [ip, count, bytes]
