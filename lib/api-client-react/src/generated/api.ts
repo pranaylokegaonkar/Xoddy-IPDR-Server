@@ -35,6 +35,7 @@ import type {
   CompressionStatus,
   CountResult,
   CurrentUser,
+  DashboardStorage,
   DashboardSummary,
   DeleteArchivesInput,
   DeleteResult,
@@ -854,6 +855,83 @@ export function useGetIpNetworks<TData = Awaited<ReturnType<typeof getIpNetworks
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetIpNetworksQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDashboardStorageUrl = () => {
+
+
+
+
+  return `/api/dashboard/storage`
+}
+
+/**
+ * @summary Compressed archive bytes and allocated live-flow database storage
+ */
+export const getDashboardStorage = async ( options?: RequestInit): Promise<DashboardStorage> => {
+
+  return customFetch<DashboardStorage>(getGetDashboardStorageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDashboardStorageQueryKey = () => {
+    return [
+    `/api/dashboard/storage`
+    ] as const;
+    }
+
+
+export const getGetDashboardStorageQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardStorage>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardStorage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDashboardStorageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboardStorage>>> = ({ signal }) => getDashboardStorage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardStorage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDashboardStorageQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardStorage>>>
+export type GetDashboardStorageQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Compressed archive bytes and allocated live-flow database storage
+ */
+
+export function useGetDashboardStorage<TData = Awaited<ReturnType<typeof getDashboardStorage>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardStorage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDashboardStorageQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

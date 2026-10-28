@@ -17,6 +17,20 @@ import { ipNetworkLookup, parseNetworkIps } from "../lib/ip-network";
 const router: IRouter = Router();
 const cpuSampler = new CpuUsageSampler();
 
+router.get("/dashboard/storage", async (_req, res) => {
+  // Only archive metadata is scanned. PostgreSQL relation sizing uses filesystem
+  // metadata rather than scanning the growing live-flow table.
+  const [storage] = await db.select({
+    archiveBytes: sql<string>`coalesce(sum(${flowArchivesTable.compressedBytes}), 0)`,
+    currentBytes: sql<string>`pg_total_relation_size('flow_records'::regclass)`,
+  }).from(flowArchivesTable);
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    archiveBytes: Number(storage.archiveBytes),
+    currentBytes: Number(storage.currentBytes),
+  });
+});
+
 router.get("/dashboard/top-talkers", async (_req, res) => {
   const rows = await db.select({
     ip: flowRecordsTable.srcIp,

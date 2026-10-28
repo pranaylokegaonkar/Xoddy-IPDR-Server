@@ -179,6 +179,19 @@ export interface IpNetwork {
   ispStatus: IpNetworkIspStatus;
 }
 
+export interface DashboardStorage {
+  /**
+     * Sum of compressed archive file sizes, including imported archives; each archive counted once regardless of storage location.
+     * @minimum 0
+     */
+  archiveBytes: number;
+  /**
+     * PostgreSQL allocated size of flow_records including indexes, TOAST and reusable space. Includes archived original rows still awaiting retention cleanup. Not network traffic bytes.
+     * @minimum 0
+     */
+  currentBytes: number;
+}
+
 export interface ResourceUsage {
   total: number;
   used: number;

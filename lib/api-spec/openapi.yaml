@@ -186,6 +186,18 @@ paths:
                 items: { $ref: "#/components/schemas/IpNetwork" }
         "400":
           description: Invalid IP list
+  /dashboard/storage:
+    get:
+      operationId: getDashboardStorage
+      tags: [dashboard]
+      summary: Compressed archive bytes and allocated live-flow database storage
+      responses:
+        "200":
+          description: Storage sizes without scanning flow records or reading archive payloads
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStorage"
   /dashboard/system-resources:
     get:
       operationId: getSystemResources
@@ -1153,6 +1165,18 @@ components:
         ispStatus:
           type: string
           enum: [resolved, pending, not_public, unavailable]
+    DashboardStorage:
+      type: object
+      required: [archiveBytes, currentBytes]
+      properties:
+        archiveBytes:
+          type: number
+          minimum: 0
+          description: Sum of compressed archive file sizes, including imported archives; each archive counted once regardless of storage location.
+        currentBytes:
+          type: number
+          minimum: 0
+          description: PostgreSQL allocated size of flow_records including indexes, TOAST and reusable space. Includes archived original rows still awaiting retention cleanup. Not network traffic bytes.
     ResourceUsage:
       type: object
       required: [total, used, free, percent]

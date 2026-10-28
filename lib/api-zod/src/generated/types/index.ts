@@ -27,6 +27,7 @@ export * from './compressionStatus';
 export * from './countResult';
 export * from './currentUser';
 export * from './currentUserUserType';
+export * from './dashboardStorage';
 export * from './dashboardSummary';
 export * from './deleteArchivesInput';
 export * from './deleteResult';

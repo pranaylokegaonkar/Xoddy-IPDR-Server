@@ -233,6 +233,21 @@ export const GetIpNetworksResponse = zod.array(GetIpNetworksResponseItem)
 
 
 /**
+ * @summary Compressed archive bytes and allocated live-flow database storage
+ */
+export const getDashboardStorageResponseArchiveBytesMin = 0;
+
+export const getDashboardStorageResponseCurrentBytesMin = 0;
+
+
+
+export const GetDashboardStorageResponse = zod.object({
+  "archiveBytes": zod.number().min(getDashboardStorageResponseArchiveBytesMin).describe('Sum of compressed archive file sizes, including imported archives; each archive counted once regardless of storage location.'),
+  "currentBytes": zod.number().min(getDashboardStorageResponseCurrentBytesMin).describe('PostgreSQL allocated size of flow_records including indexes, TOAST and reusable space. Includes archived original rows still awaiting retention cleanup. Not network traffic bytes.')
+})
+
+
+/**
  * @summary Host disk space and RAM usage of the collector server
  */
 export const getSystemResourcesResponseCpuPercentMin = 0;

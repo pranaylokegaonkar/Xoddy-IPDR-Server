@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey, useGetDashboardStorage, getGetDashboardStorageQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Server, Activity, ArrowUpRight, ArrowDownRight, ShieldCheck, Cpu, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
+import { Server, Activity, ArrowUpRight, ArrowDownRight, ShieldCheck, Cpu, Bell, Trash2, Loader2, HardDrive, MemoryStick, Archive, Database } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,14 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: resources, isLoading: isLoadingResources, isError: isResourcesError } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
   const cpu = isResourcesError ? null : resources?.cpu;
+  const storageQuery = useGetDashboardStorage({
+    query: {
+      queryKey: getGetDashboardStorageQueryKey(),
+      refetchInterval: 30000,
+      retry: false,
+    },
+  });
+  const storage = storageQuery.isError ? undefined : storageQuery.data;
 
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000);
@@ -177,6 +185,21 @@ export default function Dashboard() {
             icon={Bell} 
             description="Require attention"
             alert={!isLoadingSummary && (summary?.unreadNotifications || 0) > 0}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <MetricCard
+            title="Total Archive Data Size"
+            icon={Archive}
+            value={storageQuery.isLoading ? null : storage ? formatBytes(storage.archiveBytes) : "Unavailable"}
+            description="Compressed archive files · all NAS devices"
+          />
+          <MetricCard
+            title="Total Current Data Size"
+            icon={Database}
+            value={storageQuery.isLoading ? null : storage ? formatBytes(storage.currentBytes) : "Unavailable"}
+            description={<span title="Allocated PostgreSQL flow storage includes indexes and reusable space. Deleted records may free space for reuse without shrinking this number. Archived originals remain included until cleanup.">Live flow database · includes indexes and reusable space</span>}
           />
         </div>
 
