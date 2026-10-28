@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Cpu, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getTopTalkerDisplay } from "@/lib/top-talker-preview";
-import { useGetIpNetworks, getGetIpNetworksQueryKey } from "@workspace/api-client-react";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -19,28 +16,6 @@ export default function Dashboard() {
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: trend, isLoading: isLoadingTrend } = useGetFlowTrend({ query: { queryKey: getGetFlowTrendQueryKey() } });
-  const { data: topTalkers, isLoading: isLoadingTalkers, isError: isTalkersError } = useGetTopTalkers({ query: { queryKey: getGetTopTalkersQueryKey() } });
-  const networkParams = { ips: topTalkers?.map((talker) => talker.ip).join(",") ?? "" };
-  const { data: networks, isError: isNetworkError } = useGetIpNetworks(networkParams, {
-    query: {
-      queryKey: getGetIpNetworksQueryKey(networkParams),
-      enabled: topTalkers?.some((talker) => talker.ispStatus === "pending") ?? false,
-      refetchInterval: (query) => query.state.status !== "error" &&
-        query.state.data?.some((network) => network.ispStatus === "pending") ? 2000 : false,
-    },
-  });
-  const enrichedTalkers = topTalkers?.map((talker) => {
-    const combined = {
-      ...talker,
-      ...(talker.ispStatus === "pending" ? networks?.find((network) => network.ip === talker.ip) : undefined),
-    };
-    return isNetworkError && combined.ispStatus === "pending"
-      ? { ...combined, ispName: "ISP lookup unavailable", asn: null, ispStatus: "unavailable" as const }
-      : combined;
-  });
-  const talkerDisplay = getTopTalkerDisplay(
-    enrichedTalkers, import.meta.env.DEV, window.location.hostname, isTalkersError,
-  );
   const { data: resources, isLoading: isLoadingResources, isError: isResourcesError } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
   const cpu = isResourcesError ? null : resources?.cpu;
 
@@ -226,8 +201,8 @@ export default function Dashboard() {
         </div>
 
         {/* Charts row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 flex flex-col shadow-sm border-border overflow-hidden">
+        <div className="grid grid-cols-1 gap-6">
+          <Card className="flex flex-col shadow-sm border-border overflow-hidden">
             <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold">Flow Volume Trend (24h)</CardTitle>
@@ -283,56 +258,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-border">
-            <CardHeader className="pb-2 border-b border-border/50 bg-muted/20">
-              <CardTitle className="text-base font-semibold">
-                Top Talkers (Source IP)
-                {talkerDisplay.sample && <Badge variant="outline" className="ml-2 text-[10px]">Sample</Badge>}
-              </CardTitle>
-              <CardDescription>
-                {talkerDisplay.sample ? "Sample data (Replit preview only)" : "Highest bandwidth consumers (last 24h)"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isLoadingTalkers ? (
-                <div className="p-4 space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : talkerDisplay.talkers.length > 0 ? (
-                <div className="divide-y divide-border">
-                  {talkerDisplay.talkers.map((talker, i) => (
-                    <div key={talker.ip} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex min-w-0 items-center gap-3">
-                         <div className="flex items-center justify-center size-6 rounded bg-primary/10 text-primary text-xs font-bold">
-                          {i + 1}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium font-mono leading-none break-all">{talker.ip}</p>
-                          <p className="text-xs text-muted-foreground mt-1 break-words"
-                            title={talker.ispStatus === "resolved" ? "Network organization from RIPEstat; not the individual subscriber" : undefined}>
-                            {talker.ispName ?? (talkerDisplay.sample ? "Sample IP — no ISP" : "ISP lookup unavailable")}
-                            {talker.asn != null && <span className="font-mono"> · AS{talker.asn}</span>}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">{formatNumber(talker.count)} flows</p>
-                        </div>
-                      </div>
-                      <div className="shrink-0 pl-3 text-right">
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {formatBytes(talker.bytes)}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center text-muted-foreground text-sm">
-                  No talker data available.
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>

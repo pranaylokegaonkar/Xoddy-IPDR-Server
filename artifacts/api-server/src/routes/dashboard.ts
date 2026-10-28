@@ -11,7 +11,6 @@ import {
 } from "@workspace/db";
 import { nasStatus } from "../lib/serializers";
 import { collectorPort } from "../lib/collector";
-import { ipNetworkLookup, parseNetworkIps } from "../lib/ip-network";
 import { CpuUsageSampler } from "../lib/cpu-usage";
 
 const router: IRouter = Router();
@@ -84,39 +83,6 @@ router.get("/dashboard/flow-trend", async (_req, res) => {
       bytes: Number(r.bytes),
     })),
   );
-});
-
-router.get("/dashboard/top-talkers", async (_req, res) => {
-  const rows = await db
-    .select({
-      ip: flowRecordsTable.srcIp,
-      count: sql<number>`cast(count(*) as int)`,
-      bytes: sql<number>`coalesce(sum(${flowRecordsTable.bytes}), 0)`,
-    })
-    .from(flowRecordsTable)
-    .where(sql`${flowRecordsTable.startTime} >= now() - interval '24 hours'`)
-    .groupBy(flowRecordsTable.srcIp)
-    .orderBy(desc(sql`sum(${flowRecordsTable.bytes})`))
-    .limit(10);
-
-  res.json(
-    rows.map((r) => ({
-      ip: r.ip,
-      count: r.count,
-      bytes: Number(r.bytes),
-      ...ipNetworkLookup.get(r.ip),
-    })),
-  );
-});
-
-router.get("/dashboard/ip-networks", (req, res) => {
-  const ips = parseNetworkIps(req.query.ips);
-  if (!ips) {
-    res.status(400).json({ error: "Provide up to ten valid IP addresses." });
-    return;
-  }
-  res.setHeader("Cache-Control", "no-store");
-  res.json(ips.map((ip) => ({ ip, ...ipNetworkLookup.get(ip) })));
 });
 
 // Read accurate memory figures from /proc/meminfo when available (Linux):
