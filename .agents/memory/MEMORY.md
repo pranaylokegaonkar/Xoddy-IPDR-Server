@@ -9,3 +9,4 @@
 - [Orval path+query param collision](orval-path-query-param-collision.md) — never mix a path param and a query param on one OpenAPI op (TS2308 dup export); use a path-only sub-route instead.
 - [Periodic job scheduling on restart-prone hosts](compression-scheduler.md) — one long setInterval resets on every restart and never fires; use a short poll gated by a cheap indexed readiness check + a startup kick.
 - [orval query options](orval-query-options.md) — generated useGetX hooks need an explicit queryKey (via getGetXQueryKey) whenever you pass a query options object, else TS2741.
+- [Ubuntu update environment](ubuntu-update-environment.md) — the updater must use the running service's environment, not assume a second env file targets the same database.

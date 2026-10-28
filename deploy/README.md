@@ -34,6 +34,20 @@ update when the server checkout contains local changes or Git cannot fetch.
 Database schema changes are applied by `drizzle-kit push`; review the schema
 change and maintain a database backup as part of production release practice.
 
-The application environment, including `DATABASE_URL`, is loaded from
-`/etc/xoddy-ipdr/xoddy-ipdr.env`. Remove any revoked GitHub token from that file;
-Git fetch authentication is taken from the configured Git remote instead.
+The updater uses the systemd service's `EnvironmentFile`, so updates connect to
+the same database as the running application. If no service environment is
+configured, it uses `/opt/xoddy-ipdr/.env`, falling back to
+`/etc/xoddy-ipdr/xoddy-ipdr.env`. Multiple service environment files require an
+explicit override. To select a file explicitly:
+
+```bash
+sudo env ENV_FILE=/opt/xoddy-ipdr/.env xoddy-ipdr-update
+```
+
+A bounded, read-only database connection check runs before building or pushing
+the schema. It reports error codes without printing the connection URL or
+password. A missing database is an error, never a reason to create a new empty
+database automatically.
+
+Remove any revoked GitHub token from local environment files; Git fetch
+authentication is taken from the configured Git remote instead.
