@@ -92,7 +92,7 @@ export function OldSearchArchivePicker({ onPrepared }: { onPrepared: (s: OldSear
   return (
     <div className="space-y-6">
       <Card className="shadow-sm border-border">
-        <CardHeader className="pb-3 flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+        <CardHeader className="pb-3">
           <div className="space-y-1.5">
           <CardTitle className="text-lg">Archive Window (IST)</CardTitle>
           <CardDescription className="text-xs max-w-3xl">
@@ -101,12 +101,9 @@ export function OldSearchArchivePicker({ onPrepared }: { onPrepared: (s: OldSear
             time falls inside it. A flow that started before your start but ended inside it is included.
           </CardDescription>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={clearSearch} disabled={find.isPending || prepare.isPending}>
-            <RotateCcw className="size-4 mr-2" /> Clear Search
-          </Button>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleFind} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4 items-end">
+          <form onSubmit={handleFind} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 items-end">
             <div className="space-y-2"><Label htmlFor="os-sd">Start date</Label>
               <Input id="os-sd" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="os-st">Start time</Label>
@@ -125,10 +122,15 @@ export function OldSearchArchivePicker({ onPrepared }: { onPrepared: (s: OldSear
                   ))}
                 </SelectContent>
               </Select></div>
-            <Button type="submit" disabled={!startIso || !endIso || !!rangeError || find.isPending}>
-              {find.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Search className="size-4 mr-2" />}
-              Find Archives
-            </Button>
+            <div className="col-span-full flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={!startIso || !endIso || !!rangeError || find.isPending}>
+                {find.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Search className="size-4 mr-2" />}
+                Find Archives
+              </Button>
+              <Button type="button" variant="outline" onClick={clearSearch} disabled={find.isPending || prepare.isPending}>
+                <RotateCcw className="size-4 mr-2" /> Clear Search
+              </Button>
+            </div>
             {rangeError && <p className="text-xs text-destructive col-span-full" role="alert">{rangeError}</p>}
           </form>
         </CardContent>

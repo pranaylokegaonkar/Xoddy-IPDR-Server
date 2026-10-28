@@ -21,6 +21,10 @@ Keep **Clear Search** separate from releasing an active temporary workspace.
 
 **How to apply:** Clear filter inputs, results, errors and pagination without releasing the workspace; keep release as a separate confirmed action.
 
+Place **Clear Search** beside **Search** in Current Day Search and beside **Find Archives** in Old Search.
+
+**Why:** The user explicitly requested adjacent placement in both forms, rather than the card header.
+
 Use flow **end time** for the archive-selection window and its exact timestamp boundaries, with IST displayed explicitly.
 
 **Why:** Archives are bucketed by end time; using start time to select archive windows can omit the required files.
