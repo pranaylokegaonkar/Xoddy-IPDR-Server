@@ -149,6 +149,42 @@ export interface FlowTrendPoint {
   bytes: number;
 }
 
+export type TopTalkerIspStatus = typeof TopTalkerIspStatus[keyof typeof TopTalkerIspStatus];
+
+
+export const TopTalkerIspStatus = {
+  resolved: 'resolved',
+  pending: 'pending',
+  not_public: 'not_public',
+  unavailable: 'unavailable',
+} as const;
+
+export interface TopTalker {
+  ip: string;
+  count: number;
+  bytes: number;
+  ispName?: string;
+  asn?: number | null;
+  ispStatus?: TopTalkerIspStatus;
+}
+
+export type IpNetworkIspStatus = typeof IpNetworkIspStatus[keyof typeof IpNetworkIspStatus];
+
+
+export const IpNetworkIspStatus = {
+  resolved: 'resolved',
+  pending: 'pending',
+  not_public: 'not_public',
+  unavailable: 'unavailable',
+} as const;
+
+export interface IpNetwork {
+  ip: string;
+  ispName: string;
+  asn: number | null;
+  ispStatus: IpNetworkIspStatus;
+}
+
 export interface ResourceUsage {
   total: number;
   used: number;
@@ -614,6 +650,14 @@ export interface NasFlowDeletionStatus {
  * Restrict results to this NAS. Omit to include all devices and legacy combined archives.
  */
 export type ArchiveNasIdParameter = number;
+
+export type GetIpNetworksParams = {
+/**
+ * @minLength 1
+ * @maxLength 500
+ */
+ips: string;
+};
 
 export type GetAuditLogsParams = {
 page?: number;

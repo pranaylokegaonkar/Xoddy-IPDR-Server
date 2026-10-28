@@ -49,7 +49,9 @@ import type {
   GetArchiveLogsParams,
   GetArchivesParams,
   GetAuditLogsParams,
+  GetIpNetworksParams,
   HealthStatus,
+  IpNetwork,
   LoginInput,
   Nas,
   NasConfig,
@@ -62,6 +64,7 @@ import type {
   OldSearchSession,
   SystemResources,
   SystemUser,
+  TopTalker,
   UploadArchiveParams,
   UserInput,
   UserType,
@@ -768,6 +771,167 @@ export function useGetFlowTrend<TData = Awaited<ReturnType<typeof getFlowTrend>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetFlowTrendQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTopTalkersUrl = () => {
+
+
+
+
+  return `/api/dashboard/top-talkers`
+}
+
+/**
+ * @summary Top source IP addresses by traffic volume over the last 24 hours
+ */
+export const getTopTalkers = async ( options?: RequestInit): Promise<TopTalker[]> => {
+
+  return customFetch<TopTalker[]>(getGetTopTalkersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTopTalkersQueryKey = () => {
+    return [
+    `/api/dashboard/top-talkers`
+    ] as const;
+    }
+
+
+export const getGetTopTalkersQueryOptions = <TData = Awaited<ReturnType<typeof getTopTalkers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTopTalkers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTopTalkersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTopTalkers>>> = ({ signal }) => getTopTalkers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTopTalkers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTopTalkersQueryResult = NonNullable<Awaited<ReturnType<typeof getTopTalkers>>>
+export type GetTopTalkersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Top source IP addresses by traffic volume over the last 24 hours
+ */
+
+export function useGetTopTalkers<TData = Awaited<ReturnType<typeof getTopTalkers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTopTalkers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTopTalkersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetIpNetworksUrl = (params: GetIpNetworksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/dashboard/ip-networks?${stringifiedParams}` : `/api/dashboard/ip-networks`
+}
+
+/**
+ * @summary Network names without rerunning traffic queries
+ */
+export const getIpNetworks = async (params: GetIpNetworksParams, options?: RequestInit): Promise<IpNetwork[]> => {
+
+  return customFetch<IpNetwork[]>(getGetIpNetworksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIpNetworksQueryKey = (params?: GetIpNetworksParams,) => {
+    return [
+    `/api/dashboard/ip-networks`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetIpNetworksQueryOptions = <TData = Awaited<ReturnType<typeof getIpNetworks>>, TError = ErrorType<void>>(params: GetIpNetworksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIpNetworks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIpNetworksQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIpNetworks>>> = ({ signal }) => getIpNetworks(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIpNetworks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIpNetworksQueryResult = NonNullable<Awaited<ReturnType<typeof getIpNetworks>>>
+export type GetIpNetworksQueryError = ErrorType<void>
+
+
+/**
+ * @summary Network names without rerunning traffic queries
+ */
+
+export function useGetIpNetworks<TData = Awaited<ReturnType<typeof getIpNetworks>>, TError = ErrorType<void>>(
+ params: GetIpNetworksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIpNetworks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIpNetworksQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -59,6 +59,7 @@ export function AppSidebar() {
     },
     { title: "NAS Devices", href: "/nas", icon: Server },
     { title: "Archives", href: "/archives", icon: Archive },
+    { title: "Top Talkers", href: "/top-talkers", icon: Activity },
     { title: "Users", href: "/users", icon: Users },
     { title: "System Log", href: "/system-log", icon: ScrollText },
     { title: "Archive Logs", href: "/archive-logs", icon: FileClock },

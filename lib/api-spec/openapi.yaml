@@ -167,6 +167,39 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/FlowTrendPoint"
+  /dashboard/top-talkers:
+    get:
+      operationId: getTopTalkers
+      tags: [dashboard]
+      summary: Top source IP addresses by traffic volume over the last 24 hours
+      responses:
+        "200":
+          description: Top talkers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TopTalker" }
+  /dashboard/ip-networks:
+    get:
+      operationId: getIpNetworks
+      tags: [dashboard]
+      summary: Network names without rerunning traffic queries
+      parameters:
+        - in: query
+          name: ips
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "200":
+          description: Network lookup statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/IpNetwork" }
+        "400":
+          description: Invalid IP list
   /dashboard/system-resources:
     get:
       operationId: getSystemResources
@@ -1119,6 +1152,28 @@ components:
         time: { type: string }
         count: { type: integer }
         bytes: { type: integer }
+    TopTalker:
+      type: object
+      required: [ip, count, bytes]
+      properties:
+        ip: { type: string }
+        count: { type: integer }
+        bytes: { type: integer }
+        ispName: { type: string }
+        asn: { type: integer, nullable: true }
+        ispStatus:
+          type: string
+          enum: [resolved, pending, not_public, unavailable]
+    IpNetwork:
+      type: object
+      required: [ip, ispName, asn, ispStatus]
+      properties:
+        ip: { type: string }
+        ispName: { type: string }
+        asn: { type: integer, nullable: true }
+        ispStatus:
+          type: string
+          enum: [resolved, pending, not_public, unavailable]
     ResourceUsage:
       type: object
       required: [total, used, free, percent]

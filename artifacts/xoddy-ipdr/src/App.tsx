@@ -16,6 +16,7 @@ import SystemLog from "@/pages/system-log";
 import ArchiveLogs from "@/pages/archive-logs";
 import Notifications from "@/pages/notifications";
 import Archives from "@/pages/archives";
+import TopTalkers from "@/pages/top-talkers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,7 @@ function Router() {
         <Route path="/archive-logs" component={ArchiveLogs} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/archives" component={Archives} />
+        <Route path="/top-talkers" component={TopTalkers} />
         <Route component={NotFound} />
       </Switch>
     </Shell>
