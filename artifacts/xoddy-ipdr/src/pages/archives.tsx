@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   useGetArchives,
   getGetArchivesQueryKey,
+  useGetArchiveCoverage,
+  getGetArchiveCoverageQueryKey,
   useRunCompression,
   useGetCompressionStatus,
   getGetCompressionStatusQueryKey,
@@ -45,6 +47,17 @@ export default function Archives() {
       enabled: !invalidDateRange,
     },
   });
+  const {
+    data: coverage,
+    isLoading: isCoverageLoading,
+    isError: isCoverageError,
+  } = useGetArchiveCoverage({
+    query: {
+      queryKey: getGetArchiveCoverageQueryKey(),
+      staleTime: 15000,
+      refetchInterval: 30000,
+    },
+  });
 
   // Live compression status. Poll fast while running, slow when idle so we still
   // notice a scheduled (every-2h) run kicking off without the user clicking.
@@ -61,6 +74,7 @@ export default function Archives() {
   useEffect(() => {
     if (wasRunning.current && status && !status.running) {
       queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetArchiveCoverageQueryKey() });
     }
     wasRunning.current = !!status?.running;
   }, [status?.running, queryClient]);
@@ -90,8 +104,10 @@ export default function Archives() {
     else setSelected(new Set((archives ?? []).map((a) => a.id)));
   };
 
-  const refreshArchives = () =>
-    queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() });
+  const refreshArchives = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() }),
+    queryClient.invalidateQueries({ queryKey: getGetArchiveCoverageQueryKey() }),
+  ]);
 
   const handleDownload = async (archive: { id: number; fileName: string }) => {
     try {
@@ -251,7 +267,8 @@ export default function Archives() {
 
       <div className="px-8 pb-4">
         <Card className="shadow-sm border-border">
-          <CardContent className="flex flex-wrap items-end gap-4 p-4">
+          <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-wrap items-end gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="archive-start-date">Start date</Label>
               <Input
@@ -301,6 +318,34 @@ export default function Archives() {
                 End date must be on or after the start date.
               </span>
             )}
+            </div>
+            <div
+              className="order-first self-end text-right lg:order-last lg:self-start lg:shrink-0"
+              title="Latest archive period end, not the Archived At timestamp. This does not imply uninterrupted coverage."
+            >
+              <p className="text-xs text-muted-foreground">Data available till</p>
+              <p
+                className="mt-1 text-sm font-semibold tabular-nums"
+                data-testid="text-archive-data-available-till"
+                aria-live="polite"
+              >
+                {isCoverageLoading
+                  ? "Loading…"
+                  : isCoverageError
+                    ? "Unable to load"
+                    : coverage?.latestPeriodEnd
+                      ? `${new Intl.DateTimeFormat("en-GB", {
+                          timeZone: "Asia/Kolkata",
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        }).format(new Date(coverage.latestPeriodEnd))} IST`
+                      : "No archived data"}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

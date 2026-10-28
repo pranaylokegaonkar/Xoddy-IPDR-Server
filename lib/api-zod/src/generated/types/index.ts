@@ -7,6 +7,7 @@
  */
 
 export * from './allFlowDeletionStatus';
+export * from './archiveCoverage';
 export * from './archiveLog';
 export * from './archiveLogLevel';
 export * from './archiveLogPage';

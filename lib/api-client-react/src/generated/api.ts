@@ -21,6 +21,7 @@ import type {
 
 import type {
   AllFlowDeletionStatus,
+  ArchiveCoverage,
   ArchiveLogPage,
   AuditLogPage,
   CompressionStarted,
@@ -2599,6 +2600,83 @@ export function useGetArchives<TData = Awaited<ReturnType<typeof getArchives>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetArchivesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetArchiveCoverageUrl = () => {
+
+
+
+
+  return `/api/archives/coverage`
+}
+
+/**
+ * @summary Latest archived data period across all archives
+ */
+export const getArchiveCoverage = async ( options?: RequestInit): Promise<ArchiveCoverage> => {
+
+  return customFetch<ArchiveCoverage>(getGetArchiveCoverageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArchiveCoverageQueryKey = () => {
+    return [
+    `/api/archives/coverage`
+    ] as const;
+    }
+
+
+export const getGetArchiveCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveCoverage>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArchiveCoverageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveCoverage>>> = ({ signal }) => getArchiveCoverage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArchiveCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getArchiveCoverage>>>
+export type GetArchiveCoverageQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Latest archived data period across all archives
+ */
+
+export function useGetArchiveCoverage<TData = Awaited<ReturnType<typeof getArchiveCoverage>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArchiveCoverageQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

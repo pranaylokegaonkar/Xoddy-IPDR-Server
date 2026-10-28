@@ -13,6 +13,14 @@ export interface Error {
   error: string;
 }
 
+export interface ArchiveCoverage {
+  /**
+     * Latest archived window end, not the archive creation time. Null when there are no archives.
+     * @nullable
+     */
+  latestPeriodEnd: string | null;
+}
+
 export interface CompressionStarted {
   status: string;
   message: string;

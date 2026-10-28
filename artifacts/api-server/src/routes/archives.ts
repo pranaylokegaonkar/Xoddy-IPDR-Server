@@ -78,6 +78,16 @@ router.get("/archives", async (req, res): Promise<void> => {
   res.json(rows.map(serializeArchive));
 });
 
+router.get("/archives/coverage", async (_req, res) => {
+  // Read one timestamp only, never archive contents or original flow records.
+  const [latest] = await db
+    .select({ periodEnd: flowArchivesTable.periodEnd })
+    .from(flowArchivesTable)
+    .orderBy(desc(flowArchivesTable.periodEnd))
+    .limit(1);
+  res.json({ latestPeriodEnd: latest?.periodEnd.toISOString() ?? null });
+});
+
 // Bulk delete selected archives. Defined before the `/archives/:id` routes so
 // the literal `delete` segment is never parsed as an id.
 router.post("/archives/delete", async (req, res): Promise<void> => {

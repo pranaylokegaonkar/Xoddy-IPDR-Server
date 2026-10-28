@@ -666,6 +666,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /archives/coverage:
+    get:
+      operationId: getArchiveCoverage
+      tags: [archives]
+      summary: Latest archived data period across all archives
+      responses:
+        "200":
+          description: Latest archive period end, independent of date filters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveCoverage"
   /archives/compress:
     post:
       operationId: runCompression
@@ -747,6 +759,15 @@ components:
           type: string
       required:
         - error
+    ArchiveCoverage:
+      type: object
+      properties:
+        latestPeriodEnd:
+          type: ["string", "null"]
+          format: date-time
+          description: Latest archived window end, not the archive creation time. Null when there are no archives.
+      required:
+        - latestPeriodEnd
     CompressionStarted:
       type: object
       properties:

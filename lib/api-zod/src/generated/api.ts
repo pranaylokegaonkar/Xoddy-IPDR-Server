@@ -599,6 +599,14 @@ export const GetArchivesResponse = zod.array(GetArchivesResponseItem)
 
 
 /**
+ * @summary Latest archived data period across all archives
+ */
+export const GetArchiveCoverageResponse = zod.object({
+  "latestPeriodEnd": zod.coerce.date().nullable().describe('Latest archived window end, not the archive creation time. Null when there are no archives.')
+})
+
+
+/**
  * @summary Live status of the background compression run
  */
 export const GetCompressionStatusResponse = zod.object({
