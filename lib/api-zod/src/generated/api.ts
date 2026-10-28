@@ -246,6 +246,14 @@ export const GetIpNetworksResponse = zod.array(GetIpNetworksResponseItem)
 /**
  * @summary Host disk space and RAM usage of the collector server
  */
+export const getSystemResourcesResponseCpuPercentMin = 0;
+export const getSystemResourcesResponseCpuPercentMax = 100;
+
+export const getSystemResourcesResponseCpuProcessPercentMin = 0;
+
+
+
+
 export const GetSystemResourcesResponse = zod.object({
   "disk": zod.object({
   "total": zod.number(),
@@ -258,7 +266,12 @@ export const GetSystemResourcesResponse = zod.object({
   "used": zod.number(),
   "free": zod.number(),
   "percent": zod.number()
-})
+}),
+  "cpu": zod.object({
+  "percent": zod.number().min(getSystemResourcesResponseCpuPercentMin).max(getSystemResourcesResponseCpuPercentMax).describe('Overall server CPU utilization averaged across logical CPUs.'),
+  "processPercent": zod.number().min(getSystemResourcesResponseCpuProcessPercentMin).describe('App process CPU utilization; 100 percent means one full core and values may exceed 100.'),
+  "logicalCpus": zod.number().min(1)
+}).nullable().describe('CPU utilization sampled over one second; null when unavailable.')
 })
 
 

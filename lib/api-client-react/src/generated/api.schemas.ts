@@ -193,9 +193,34 @@ export interface ResourceUsage {
   percent: number;
 }
 
+/**
+ * CPU utilization sampled over one second; null when unavailable.
+ * @nullable
+ */
+export type SystemResourcesCpu = {
+  /**
+     * Overall server CPU utilization averaged across logical CPUs.
+     * @minimum 0
+     * @maximum 100
+     */
+  percent: number;
+  /**
+     * App process CPU utilization; 100 percent means one full core and values may exceed 100.
+     * @minimum 0
+     */
+  processPercent: number;
+  /** @minimum 1 */
+  logicalCpus: number;
+} | null;
+
 export interface SystemResources {
   disk: ResourceUsage;
   memory: ResourceUsage;
+  /**
+     * CPU utilization sampled over one second; null when unavailable.
+     * @nullable
+     */
+  cpu: SystemResourcesCpu;
 }
 
 export interface LoginInput {

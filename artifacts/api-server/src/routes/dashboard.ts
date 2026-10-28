@@ -12,8 +12,10 @@ import {
 import { nasStatus } from "../lib/serializers";
 import { collectorPort } from "../lib/collector";
 import { ipNetworkLookup, parseNetworkIps } from "../lib/ip-network";
+import { CpuUsageSampler } from "../lib/cpu-usage";
 
 const router: IRouter = Router();
+const cpuSampler = new CpuUsageSampler();
 
 router.get("/dashboard/summary", async (_req, res) => {
   const today = new Date().toISOString().slice(0, 10);
@@ -150,7 +152,7 @@ router.get("/dashboard/system-resources", async (_req, res) => {
   // Disk usage of the filesystem hosting the running app (its data dir). statfs
   // is available in Node 18.15+/19.6+ (Node 24 here). "free" uses bavail (space
   // available to unprivileged processes, matching `df`'s Avail column).
-  const [disk, memory] = await Promise.all([
+  const [disk, memory, cpu] = await Promise.all([
     (async () => {
       try {
         const s = await statfs(process.cwd());
@@ -163,6 +165,10 @@ router.get("/dashboard/system-resources", async (_req, res) => {
       }
     })(),
     readMemory(),
+    cpuSampler.read().catch((err) => {
+      _req.log.warn({ err }, "CPU utilization sample failed");
+      return null;
+    }),
   ]);
 
   // Percent over used+free (not total) so it matches `df`'s Use% column: on a
@@ -173,7 +179,8 @@ router.get("/dashboard/system-resources", async (_req, res) => {
     return { ...r, percent: denom > 0 ? (r.used / denom) * 100 : 0 };
   };
 
-  res.json({ disk: withPercent(disk), memory: withPercent(memory) });
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ disk: withPercent(disk), memory: withPercent(memory), cpu });
 });
 
 export default router;

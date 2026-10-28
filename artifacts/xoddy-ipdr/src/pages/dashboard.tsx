@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
+import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Cpu, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +41,8 @@ export default function Dashboard() {
   const talkerDisplay = getTopTalkerDisplay(
     enrichedTalkers, import.meta.env.DEV, window.location.hostname, isTalkersError,
   );
-  const { data: resources, isLoading: isLoadingResources } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
+  const { data: resources, isLoading: isLoadingResources, isError: isResourcesError } = useGetSystemResources({ query: { queryKey: getGetSystemResourcesQueryKey(), refetchInterval: 10000 } });
+  const cpu = isResourcesError ? null : resources?.cpu;
 
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000);
@@ -185,10 +186,17 @@ export default function Dashboard() {
             description={isLoadingSummary ? null : `${summary?.inactiveNas} inactive / ${summary?.totalNas} total`}
           />
           <MetricCard 
-            title="Data Volume (24h)" 
-            value={isLoadingSummary ? null : formatBytes(summary?.totalBytes || 0)} 
-            icon={Database} 
-            description="Stored in TSDB"
+            title="CPU Utilization"
+            value={isLoadingResources ? null : cpu ? `${cpu.percent.toFixed(1)}%` : "Unavailable"}
+            icon={Cpu}
+            description={cpu ? (
+              <>
+                <span className="block">Server total · {cpu.logicalCpus} logical CPUs</span>
+                <span className="block mt-1" title="App usage includes all process threads and may exceed 100% when using multiple cores.">
+                  App: {cpu.processPercent.toFixed(1)}% · 100% = 1 core
+                </span>
+              </>
+            ) : isLoadingResources ? "Reading CPU usage…" : "CPU reading unavailable"}
           />
           <MetricCard 
             title="Unread Alerts" 

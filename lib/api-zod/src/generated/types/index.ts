@@ -68,6 +68,7 @@ export * from './oldSearchSession';
 export * from './oldSearchSessionState';
 export * from './resourceUsage';
 export * from './systemResources';
+export * from './systemResourcesCpu';
 export * from './systemUser';
 export * from './systemUserUserType';
 export * from './topTalker';

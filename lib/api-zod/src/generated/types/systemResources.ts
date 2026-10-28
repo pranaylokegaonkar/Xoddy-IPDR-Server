@@ -6,8 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ResourceUsage } from './resourceUsage';
+import type { SystemResourcesCpu } from './systemResourcesCpu';
 
 export interface SystemResources {
   disk: ResourceUsage;
   memory: ResourceUsage;
+  /**
+     * CPU utilization sampled over one second; null when unavailable.
+     * @nullable
+     */
+  cpu: SystemResourcesCpu;
 }

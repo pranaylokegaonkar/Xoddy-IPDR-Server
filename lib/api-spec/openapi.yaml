@@ -1188,10 +1188,27 @@ components:
         percent: { type: number }
     SystemResources:
       type: object
-      required: [disk, memory]
+      required: [disk, memory, cpu]
       properties:
         disk: { $ref: "#/components/schemas/ResourceUsage" }
         memory: { $ref: "#/components/schemas/ResourceUsage" }
+        cpu:
+          type: [object, "null"]
+          description: CPU utilization sampled over one second; null when unavailable.
+          required: [percent, processPercent, logicalCpus]
+          properties:
+            percent:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: Overall server CPU utilization averaged across logical CPUs.
+            processPercent:
+              type: number
+              minimum: 0
+              description: App process CPU utilization; 100 percent means one full core and values may exceed 100.
+            logicalCpus:
+              type: integer
+              minimum: 1
 
     LoginInput:
       type: object
