@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetFlowTrend, getGetFlowTrendQueryKey, useGetTopTalkers, getGetTopTalkersQueryKey, useDeleteAllFlows, useGetAllFlowDeletionStatus, getGetAllFlowDeletionStatusQueryKey, useGetSystemResources, getGetSystemResourcesQueryKey } from "@workspace/api-client-react";
-import appPackage from "../../package.json";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Server, Activity, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Database, Bell, Trash2, Loader2, HardDrive, MemoryStick } from "lucide-react";
@@ -104,12 +103,6 @@ export default function Dashboard() {
         
         {summary && (
           <div className="flex items-start gap-4">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md border border-border"
-              title="Application version"
-            >
-              <span className="text-xs font-medium font-mono text-muted-foreground">Version v{appPackage.version}</span>
-            </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md border border-border">
               <div className="size-2 rounded-full bg-green-500 animate-pulse"></div>
               <span className="text-xs font-medium font-mono text-muted-foreground">UDP:{summary.collectorPort}</span>
@@ -120,7 +113,7 @@ export default function Dashboard() {
                 <span className="text-xs font-semibold uppercase tracking-wider">DOT IPDR Compliant</span>
               </div>
               <time
-                className="text-[11px] font-mono text-muted-foreground whitespace-nowrap"
+                className="font-mono text-muted-foreground whitespace-nowrap text-[16px]"
                 dateTime={currentDateTime.toISOString()}
                 title="Local date and time"
               >
@@ -130,7 +123,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
       <div className="p-8 pt-4 space-y-6">
         {purging && purgeStatus && (
           <Card className="border-destructive/40 bg-destructive/5 shadow-sm">
@@ -324,7 +316,6 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
