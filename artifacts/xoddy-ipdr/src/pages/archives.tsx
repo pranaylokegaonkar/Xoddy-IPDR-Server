@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   useGetArchives,
   getGetArchivesQueryKey,
-  useGetArchiveCoverage,
   getGetArchiveCoverageQueryKey,
+  getGetArchiveNasOptionsQueryKey,
   useRunCompression,
   useGetCompressionStatus,
   getGetCompressionStatusQueryKey,
@@ -14,8 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArchiveFilters } from "@/components/archives/archive-filters";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Archive as ArchiveIcon, FileArchive, Loader2, Zap, Download, Trash2 } from "lucide-react";
@@ -27,11 +26,26 @@ export default function Archives() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // Capture the same IST calendar date for both defaults when the page opens.
+  const [todayIst] = useState(() =>
+    new Date(Date.now() + (5 * 60 + 30) * 60 * 1000).toISOString().slice(0, 10),
+  );
+  const [startDate, setStartDate] = useState(todayIst);
+  const [endDate, setEndDate] = useState(todayIst);
+  const [nasId, setNasId] = useState("all");
+  const [appliedFilters, setAppliedFilters] = useState({
+    startDate: todayIst,
+    endDate: todayIst,
+    nasId: "all",
+  });
+  const hasPendingFilters =
+    startDate !== appliedFilters.startDate ||
+    endDate !== appliedFilters.endDate ||
+    nasId !== appliedFilters.nasId;
   const archiveParams = {
-    ...(startDate ? { startDate } : {}),
-    ...(endDate ? { endDate } : {}),
+    ...(appliedFilters.startDate ? { startDate: appliedFilters.startDate } : {}),
+    ...(appliedFilters.endDate ? { endDate: appliedFilters.endDate } : {}),
+    ...(appliedFilters.nasId !== "all" ? { nasId: Number(appliedFilters.nasId) } : {}),
   };
   const queryParams = Object.keys(archiveParams).length ? archiveParams : undefined;
   const invalidDateRange = !!startDate && !!endDate && startDate > endDate;
@@ -44,18 +58,6 @@ export default function Archives() {
   } = useGetArchives(queryParams, {
     query: {
       queryKey: getGetArchivesQueryKey(queryParams),
-      enabled: !invalidDateRange,
-    },
-  });
-  const {
-    data: coverage,
-    isLoading: isCoverageLoading,
-    isError: isCoverageError,
-  } = useGetArchiveCoverage({
-    query: {
-      queryKey: getGetArchiveCoverageQueryKey(),
-      staleTime: 15000,
-      refetchInterval: 30000,
     },
   });
 
@@ -75,6 +77,7 @@ export default function Archives() {
     if (wasRunning.current && status && !status.running) {
       queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetArchiveCoverageQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetArchiveNasOptionsQueryKey() });
     }
     wasRunning.current = !!status?.running;
   }, [status?.running, queryClient]);
@@ -87,7 +90,18 @@ export default function Archives() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   useEffect(() => {
     setSelected(new Set());
-  }, [startDate, endDate]);
+  }, [startDate, endDate, nasId]);
+
+  const handleShowData = () => {
+    if (invalidDateRange) return;
+    setSelected(new Set());
+    if (hasPendingFilters) {
+      setAppliedFilters({ startDate, endDate, nasId });
+    } else {
+      void refetch();
+      queryClient.invalidateQueries({ queryKey: getGetArchiveCoverageQueryKey() });
+    }
+  };
 
   const toggleRow = (id: number) => {
     setSelected((prev) => {
@@ -107,6 +121,7 @@ export default function Archives() {
   const refreshArchives = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: getGetArchivesQueryKey() }),
     queryClient.invalidateQueries({ queryKey: getGetArchiveCoverageQueryKey() }),
+    queryClient.invalidateQueries({ queryKey: getGetArchiveNasOptionsQueryKey() }),
   ]);
 
   const handleDownload = async (archive: { id: number; fileName: string }) => {
@@ -266,88 +281,19 @@ export default function Archives() {
       </div>
 
       <div className="px-8 pb-4">
-        <Card className="shadow-sm border-border">
-          <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex flex-wrap items-end gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="archive-start-date">Start date</Label>
-              <Input
-                id="archive-start-date"
-                data-testid="input-archive-start-date"
-                type="date"
-                value={startDate}
-                max={endDate || undefined}
-                onChange={(event) => setStartDate(event.target.value)}
-                className="w-full sm:w-48"
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="archive-end-date">End date</Label>
-              <Input
-                id="archive-end-date"
-                data-testid="input-archive-end-date"
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={(event) => setEndDate(event.target.value)}
-                className="w-full sm:w-48"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              data-testid="button-clear-archive-dates"
-              onClick={() => {
-                setStartDate("");
-                setEndDate("");
-              }}
-              disabled={!startDate && !endDate}
-            >
-              Clear dates
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              Filters archive-window dates in IST.
-            </span>
-            {isFetching && (
-              <span className="text-xs text-muted-foreground" role="status">
-                Updating archives…
-              </span>
-            )}
-            {invalidDateRange && (
-              <span className="text-xs text-destructive" role="alert">
-                End date must be on or after the start date.
-              </span>
-            )}
-            </div>
-            <div
-              className="order-first self-end text-right lg:order-last lg:self-start lg:shrink-0"
-              title="Latest archive period end, not the Archived At timestamp. This does not imply uninterrupted coverage."
-            >
-              <p className="text-xs text-muted-foreground">Data available till</p>
-              <p
-                className="mt-1 text-sm font-semibold tabular-nums"
-                data-testid="text-archive-data-available-till"
-                aria-live="polite"
-              >
-                {isCoverageLoading
-                  ? "Loading…"
-                  : isCoverageError
-                    ? "Unable to load"
-                    : coverage?.latestPeriodEnd
-                      ? `${new Intl.DateTimeFormat("en-GB", {
-                          timeZone: "Asia/Kolkata",
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        }).format(new Date(coverage.latestPeriodEnd))} IST`
-                      : "No archived data"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <ArchiveFilters
+          startDate={startDate}
+          endDate={endDate}
+          nasId={nasId}
+          appliedNasId={appliedFilters.nasId}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onNasIdChange={setNasId}
+          isFetching={isFetching}
+          invalidDateRange={invalidDateRange}
+          onShowData={handleShowData}
+          hasPendingFilters={hasPendingFilters}
+        />
       </div>
 
       {status?.running && (
@@ -424,12 +370,6 @@ export default function Archives() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={10} className="h-24 text-center">Loading...</TableCell></TableRow>
-                ) : invalidDateRange ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
-                      Choose an end date on or after the start date.
-                    </TableCell>
-                  </TableRow>
                 ) : isError ? (
                   <TableRow>
                     <TableCell colSpan={10} className="h-24 text-center">
@@ -446,8 +386,8 @@ export default function Archives() {
                     <TableCell colSpan={10} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <FileArchive className="size-10 mb-2 opacity-20" />
-                        <p>{startDate || endDate ? "No archives match these dates" : "No archives generated yet"}</p>
-                        {!startDate && !endDate && (
+                        <p>{appliedFilters.startDate || appliedFilters.endDate || appliedFilters.nasId !== "all" ? "No archives match these filters" : "No archives generated yet"}</p>
+                        {!appliedFilters.startDate && !appliedFilters.endDate && appliedFilters.nasId === "all" && (
                           <p className="text-xs mt-1">Archives are automatically created every 2 hours</p>
                         )}
                       </div>

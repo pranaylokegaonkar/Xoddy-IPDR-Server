@@ -23,6 +23,7 @@ import type {
   AllFlowDeletionStatus,
   ArchiveCoverage,
   ArchiveLogPage,
+  ArchiveNasOption,
   AuditLogPage,
   CompressionStarted,
   CompressionStatus,
@@ -38,6 +39,7 @@ import type {
   FlowSearch,
   FlowSearchResult,
   FlowTrendPoint,
+  GetArchiveCoverageParams,
   GetArchiveLogsParams,
   GetArchivesParams,
   GetAuditLogsParams,
@@ -2612,20 +2614,20 @@ export function useGetArchives<TData = Awaited<ReturnType<typeof getArchives>>, 
 
 
 
-export const getGetArchiveCoverageUrl = () => {
+export const getGetArchiveNasOptionsUrl = () => {
 
 
 
 
-  return `/api/archives/coverage`
+  return `/api/archives/nas-options`
 }
 
 /**
- * @summary Latest archived data period across all archives
+ * @summary List current and historical archive NAS devices without flow counts
  */
-export const getArchiveCoverage = async ( options?: RequestInit): Promise<ArchiveCoverage> => {
+export const getArchiveNasOptions = async ( options?: RequestInit): Promise<ArchiveNasOption[]> => {
 
-  return customFetch<ArchiveCoverage>(getGetArchiveCoverageUrl(),
+  return customFetch<ArchiveNasOption[]>(getGetArchiveNasOptionsUrl(),
   {
     ...options,
     method: 'GET'
@@ -2638,23 +2640,107 @@ export const getArchiveCoverage = async ( options?: RequestInit): Promise<Archiv
 
 
 
-export const getGetArchiveCoverageQueryKey = () => {
+export const getGetArchiveNasOptionsQueryKey = () => {
     return [
-    `/api/archives/coverage`
+    `/api/archives/nas-options`
     ] as const;
     }
 
 
-export const getGetArchiveCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveCoverage>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetArchiveNasOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveNasOptions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveNasOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetArchiveCoverageQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetArchiveNasOptionsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveCoverage>>> = ({ signal }) => getArchiveCoverage({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveNasOptions>>> = ({ signal }) => getArchiveNasOptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArchiveNasOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArchiveNasOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getArchiveNasOptions>>>
+export type GetArchiveNasOptionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List current and historical archive NAS devices without flow counts
+ */
+
+export function useGetArchiveNasOptions<TData = Awaited<ReturnType<typeof getArchiveNasOptions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveNasOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArchiveNasOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetArchiveCoverageUrl = (params?: GetArchiveCoverageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/archives/coverage?${stringifiedParams}` : `/api/archives/coverage`
+}
+
+/**
+ * @summary Latest archived data period for all or one NAS
+ */
+export const getArchiveCoverage = async (params?: GetArchiveCoverageParams, options?: RequestInit): Promise<ArchiveCoverage> => {
+
+  return customFetch<ArchiveCoverage>(getGetArchiveCoverageUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArchiveCoverageQueryKey = (params?: GetArchiveCoverageParams,) => {
+    return [
+    `/api/archives/coverage`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetArchiveCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveCoverage>>, TError = ErrorType<Error>>(params?: GetArchiveCoverageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArchiveCoverageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveCoverage>>> = ({ signal }) => getArchiveCoverage(params, { signal, ...requestOptions });
 
 
 
@@ -2664,19 +2750,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetArchiveCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getArchiveCoverage>>>
-export type GetArchiveCoverageQueryError = ErrorType<unknown>
+export type GetArchiveCoverageQueryError = ErrorType<Error>
 
 
 /**
- * @summary Latest archived data period across all archives
+ * @summary Latest archived data period for all or one NAS
  */
 
-export function useGetArchiveCoverage<TData = Awaited<ReturnType<typeof getArchiveCoverage>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetArchiveCoverage<TData = Awaited<ReturnType<typeof getArchiveCoverage>>, TError = ErrorType<Error>>(
+ params?: GetArchiveCoverageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetArchiveCoverageQueryOptions(options)
+  const queryOptions = getGetArchiveCoverageQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

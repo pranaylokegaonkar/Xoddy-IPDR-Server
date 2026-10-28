@@ -637,6 +637,7 @@ paths:
       tags: [archives]
       summary: List compressed flow archives
       parameters:
+        - $ref: "#/components/parameters/ArchiveNasId"
         - name: startDate
           in: query
           required: false
@@ -666,11 +667,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /archives/nas-options:
+    get:
+      operationId: getArchiveNasOptions
+      tags: [archives]
+      summary: List current and historical archive NAS devices without flow counts
+      responses:
+        "200":
+          description: Available NAS filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArchiveNasOption"
   /archives/coverage:
     get:
       operationId: getArchiveCoverage
       tags: [archives]
-      summary: Latest archived data period across all archives
+      summary: Latest archived data period for all or one NAS
+      parameters:
+        - $ref: "#/components/parameters/ArchiveNasId"
       responses:
         "200":
           description: Latest archive period end, independent of date filters
@@ -678,6 +695,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ArchiveCoverage"
+        "400":
+          description: Invalid NAS filter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /archives/compress:
     post:
       operationId: runCompression
@@ -738,6 +761,15 @@ paths:
                 $ref: "#/components/schemas/Error"
 components:
   parameters:
+    ArchiveNasId:
+      name: nasId
+      in: query
+      required: false
+      description: Restrict results to this NAS. Omit to include all devices and legacy combined archives.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 2147483647
     IdParam:
       name: id
       in: path
@@ -759,6 +791,13 @@ components:
           type: string
       required:
         - error
+    ArchiveNasOption:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        ipAddress: { type: ["string", "null"] }
+      required: [id, name, ipAddress]
     ArchiveCoverage:
       type: object
       properties:

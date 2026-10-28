@@ -5,8 +5,15 @@
  * Xoddy IPDR Server API - MikroTik Traffic Flow (NetFlow/IPFIX) collector
  * OpenAPI spec version: 0.1.0
  */
+import type { ArchiveNasIdParameter } from './archiveNasIdParameter';
 
 export type GetArchivesParams = {
+/**
+ * Restrict results to this NAS. Omit to include all devices and legacy combined archives.
+ * @minimum 1
+ * @maximum 2147483647
+ */
+nasId?: ArchiveNasIdParameter;
 /**
  * Include archive windows starting on or after this IST calendar date (YYYY-MM-DD).
  * @pattern ^\d{4}-\d{2}-\d{2}$

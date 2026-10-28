@@ -13,6 +13,13 @@ export interface Error {
   error: string;
 }
 
+export interface ArchiveNasOption {
+  id: number;
+  name: string;
+  /** @nullable */
+  ipAddress: string | null;
+}
+
 export interface ArchiveCoverage {
   /**
      * Latest archived window end, not the archive creation time. Null when there are no archives.
@@ -474,6 +481,11 @@ export interface NasFlowDeletionStatus {
   lastError?: string | null;
 }
 
+/**
+ * Restrict results to this NAS. Omit to include all devices and legacy combined archives.
+ */
+export type ArchiveNasIdParameter = number;
+
 export type GetAuditLogsParams = {
 page?: number;
 pageSize?: number;
@@ -498,6 +510,12 @@ export const GetArchiveLogsLevel = {
 
 export type GetArchivesParams = {
 /**
+ * Restrict results to this NAS. Omit to include all devices and legacy combined archives.
+ * @minimum 1
+ * @maximum 2147483647
+ */
+nasId?: ArchiveNasIdParameter;
+/**
  * Include archive windows starting on or after this IST calendar date (YYYY-MM-DD).
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
@@ -507,5 +525,14 @@ startDate?: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 endDate?: string;
+};
+
+export type GetArchiveCoverageParams = {
+/**
+ * Restrict results to this NAS. Omit to include all devices and legacy combined archives.
+ * @minimum 1
+ * @maximum 2147483647
+ */
+nasId?: ArchiveNasIdParameter;
 };
 

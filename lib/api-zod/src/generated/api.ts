@@ -573,11 +573,14 @@ export const MarkAllNotificationsReadResponse = zod.object({
 /**
  * @summary List compressed flow archives
  */
+export const getArchivesQueryNasIdMax = 2147483647;
+
 export const getArchivesQueryStartDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const getArchivesQueryEndDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const GetArchivesQueryParams = zod.object({
+  "nasId": zod.coerce.number().min(1).max(getArchivesQueryNasIdMax).optional().describe('Restrict results to this NAS. Omit to include all devices and legacy combined archives.'),
   "startDate": zod.coerce.string().regex(getArchivesQueryStartDateRegExp).optional().describe('Include archive windows starting on or after this IST calendar date (YYYY-MM-DD).'),
   "endDate": zod.coerce.string().regex(getArchivesQueryEndDateRegExp).optional().describe('Include archive windows starting on or before this IST calendar date (YYYY-MM-DD).')
 })
@@ -599,8 +602,27 @@ export const GetArchivesResponse = zod.array(GetArchivesResponseItem)
 
 
 /**
- * @summary Latest archived data period across all archives
+ * @summary List current and historical archive NAS devices without flow counts
  */
+export const GetArchiveNasOptionsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "ipAddress": zod.string().nullable()
+})
+export const GetArchiveNasOptionsResponse = zod.array(GetArchiveNasOptionsResponseItem)
+
+
+/**
+ * @summary Latest archived data period for all or one NAS
+ */
+export const getArchiveCoverageQueryNasIdMax = 2147483647;
+
+
+
+export const GetArchiveCoverageQueryParams = zod.object({
+  "nasId": zod.coerce.number().min(1).max(getArchiveCoverageQueryNasIdMax).optional().describe('Restrict results to this NAS. Omit to include all devices and legacy combined archives.')
+})
+
 export const GetArchiveCoverageResponse = zod.object({
   "latestPeriodEnd": zod.coerce.date().nullable().describe('Latest archived window end, not the archive creation time. Null when there are no archives.')
 })

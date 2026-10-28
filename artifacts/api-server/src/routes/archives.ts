@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gte, inArray, lt, type SQL } from "drizzle-orm";
-import { db, flowArchivesTable } from "@workspace/db";
+import { and, desc, eq, gte, inArray, isNotNull, lt, type SQL } from "drizzle-orm";
+import { db, flowArchivesTable, nasDevicesTable } from "@workspace/db";
 import { DeleteArchivesBody } from "@workspace/api-zod";
 import { serializeArchive } from "../lib/serializers";
 import { runCompression, getCompressionStatus } from "../lib/jobs";
@@ -12,6 +12,13 @@ const router: IRouter = Router();
 
 const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseNasId(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
+}
 
 function parseIstDateBoundary(value: unknown): Date | null | undefined {
   if (value === undefined) return undefined;
@@ -30,6 +37,11 @@ function parseIstDateBoundary(value: unknown): Date | null | undefined {
 }
 
 router.get("/archives", async (req, res): Promise<void> => {
+  const nasId = parseNasId(req.query.nasId);
+  if (nasId === null) {
+    res.status(400).json({ error: "nasId must be a positive integer." });
+    return;
+  }
   const rawStartDate = req.query.startDate;
   const rawEndDate = req.query.endDate;
   const startBoundary = parseIstDateBoundary(rawStartDate);
@@ -47,6 +59,9 @@ router.get("/archives", async (req, res): Promise<void> => {
   }
 
   const conditions: SQL[] = [];
+  if (nasId !== undefined) {
+    conditions.push(eq(flowArchivesTable.nasId, nasId));
+  }
   if (startBoundary) {
     conditions.push(gte(flowArchivesTable.periodStart, startBoundary));
   }
@@ -78,11 +93,50 @@ router.get("/archives", async (req, res): Promise<void> => {
   res.json(rows.map(serializeArchive));
 });
 
-router.get("/archives/coverage", async (_req, res) => {
+router.get("/archives/nas-options", async (_req, res) => {
+  // No joins to flow_records and no archive payload reads for a dropdown.
+  const [devices, archivedDevices] = await Promise.all([
+    db.select({
+      id: nasDevicesTable.id,
+      name: nasDevicesTable.name,
+      ipAddress: nasDevicesTable.ipAddress,
+    }).from(nasDevicesTable),
+    db.selectDistinctOn([flowArchivesTable.nasId], {
+      id: flowArchivesTable.nasId,
+      name: flowArchivesTable.nasName,
+      ipAddress: flowArchivesTable.nasIp,
+    })
+      .from(flowArchivesTable)
+      .where(isNotNull(flowArchivesTable.nasId))
+      .orderBy(flowArchivesTable.nasId, desc(flowArchivesTable.createdAt)),
+  ]);
+  const options = new Map<number, { id: number; name: string; ipAddress: string | null }>(
+    devices.map((device) => [device.id, device]),
+  );
+  // Retain filters for archives whose NAS was subsequently removed.
+  for (const device of archivedDevices) {
+    if (device.id !== null && !options.has(device.id)) {
+      options.set(device.id, {
+        id: device.id,
+        name: device.name ?? `NAS ${device.id}`,
+        ipAddress: device.ipAddress,
+      });
+    }
+  }
+  res.json([...options.values()].sort((a, b) => a.name.localeCompare(b.name)));
+});
+
+router.get("/archives/coverage", async (req, res): Promise<void> => {
+  const nasId = parseNasId(req.query.nasId);
+  if (nasId === null) {
+    res.status(400).json({ error: "nasId must be a positive integer." });
+    return;
+  }
   // Read one timestamp only, never archive contents or original flow records.
   const [latest] = await db
     .select({ periodEnd: flowArchivesTable.periodEnd })
     .from(flowArchivesTable)
+    .where(nasId === undefined ? undefined : eq(flowArchivesTable.nasId, nasId))
     .orderBy(desc(flowArchivesTable.periodEnd))
     .limit(1);
   res.json({ latestPeriodEnd: latest?.periodEnd.toISOString() ?? null });
