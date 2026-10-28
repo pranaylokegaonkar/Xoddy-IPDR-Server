@@ -31,7 +31,7 @@ function Router() {
     <Shell>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/flows" component={Flows} />
+        <Route path="/flows/:mode?" component={Flows} />
         <Route path="/nas" component={NasList} />
         <Route path="/users" component={UsersList} />
         <Route path="/system-log" component={SystemLog} />

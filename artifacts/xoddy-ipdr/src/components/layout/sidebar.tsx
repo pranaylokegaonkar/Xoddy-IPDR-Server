@@ -15,6 +15,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
   useSidebar
@@ -47,7 +50,13 @@ export function AppSidebar() {
 
   const navItems = [
     { title: "Dashboard", href: "/", icon: LayoutDashboard },
-    { title: "Search Flows", href: "/flows", icon: Search },
+    {
+      title: "Search Flows", href: "/flows", icon: Search,
+      children: [
+        { title: "Current Day Search", href: "/flows" },
+        { title: "Old Search", href: "/flows/old" },
+      ],
+    },
     { title: "NAS Devices", href: "/nas", icon: Server },
     { title: "Archives", href: "/archives", icon: Archive },
     { title: "Users", href: "/users", icon: Users },
@@ -91,6 +100,19 @@ export function AppSidebar() {
                         <span className="font-medium text-sm">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
+                    {item.children && (
+                      <SidebarMenuSub>
+                        {item.children.map((child) => (
+                          <SidebarMenuSubItem key={child.href}>
+                            <SidebarMenuSubButton asChild isActive={location === child.href}>
+                              <Link href={child.href} aria-current={location === child.href ? "page" : undefined}>
+                                <span>{child.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
                 );
               })}

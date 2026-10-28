@@ -9,6 +9,12 @@ Keep the existing flow-table search under **Current Day Search**. **Old Search**
 
 **How to apply:** Preserve ordinary flow search behaviour. Temporary-workspace release and expiry remove only temporary data, never the original archives. Selected archives must remain protected against deletion for the workspace's lifetime.
 
+Put **Current Day Search** and **Old Search** underneath **Search Flows** in the navigation panel, not in page-header tabs.
+
+**Why:** The user explicitly requested this navigation placement.
+
+**How to apply:** Keep both modes accessible from navigation when revising the search screens.
+
 Use flow **end time** for the archive-selection window and its exact timestamp boundaries, with IST displayed explicitly.
 
 **Why:** Archives are bucketed by end time; using start time to select archive windows can omit the required files.
