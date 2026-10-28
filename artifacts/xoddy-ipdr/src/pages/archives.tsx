@@ -8,13 +8,13 @@ import {
   useGetCompressionStatus,
   getGetCompressionStatusQueryKey,
   useDeleteArchive,
-  useDeleteArchives,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArchiveFilters } from "@/components/archives/archive-filters";
+import { ArchiveDeletionControls } from "@/components/archives/archive-deletion-controls";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Archive as ArchiveIcon, FileArchive, Loader2, Zap, Download, Trash2 } from "lucide-react";
@@ -25,6 +25,7 @@ import { getToken } from "@/lib/token";
 export default function Archives() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Capture the same IST calendar date for both defaults when the page opens.
   const [todayIst] = useState(() =>
@@ -84,7 +85,6 @@ export default function Archives() {
 
   const runCompression = useRunCompression();
   const deleteArchive = useDeleteArchive();
-  const deleteArchives = useDeleteArchives();
 
   // Row selection for bulk delete.
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -146,6 +146,7 @@ export default function Archives() {
   };
 
   const handleDeleteOne = (archive: { id: number; fileName: string }) => {
+    if (bulkDeleting) return;
     if (!confirm(`Delete archive "${archive.fileName}"?\n\nThis permanently removes the compressed file. This cannot be undone.`)) return;
     deleteArchive.mutate(
       { id: archive.id },
@@ -158,23 +159,6 @@ export default function Archives() {
           });
           refreshArchives();
           toast({ title: "Archive deleted" });
-        },
-        onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
-      },
-    );
-  };
-
-  const handleDeleteSelected = () => {
-    const ids = Array.from(selected);
-    if (ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} selected archive(s)?\n\nThis permanently removes the compressed files. This cannot be undone.`)) return;
-    deleteArchives.mutate(
-      { data: { ids } },
-      {
-        onSuccess: (res) => {
-          setSelected(new Set());
-          refreshArchives();
-          toast({ title: "Archives deleted", description: `${res.deleted.toLocaleString()} archive(s) removed.` });
         },
         onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
       },
@@ -242,7 +226,7 @@ export default function Archives() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-8 pt-8 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 px-8 pt-8 pb-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-sans">Data Archives</h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -251,21 +235,13 @@ export default function Archives() {
             {" "}(archived shortly after).
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {selected.size > 0 && (
-            <Button
-              variant="destructive"
-              onClick={handleDeleteSelected}
-              disabled={deleteArchives.isPending}
-            >
-              {deleteArchives.isPending ? (
-                <Loader2 className="size-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="size-4 mr-2" />
-              )}
-              Delete Selected ({selected.size})
-            </Button>
-          )}
+        <div className="flex items-start gap-2">
+          <ArchiveDeletionControls
+            selectedIds={Array.from(selected)}
+            onStarted={() => setSelected(new Set())}
+            onChanged={refreshArchives}
+            onBusyChange={setBulkDeleting}
+          />
           <Button
             onClick={handleRunCompression}
             disabled={runCompression.isPending || status?.running}
@@ -353,6 +329,7 @@ export default function Archives() {
                     <Checkbox
                       checked={allSelected}
                       onCheckedChange={toggleAll}
+                      disabled={bulkDeleting}
                       aria-label="Select all archives"
                     />
                   </TableHead>
@@ -400,6 +377,7 @@ export default function Archives() {
                         <Checkbox
                           checked={selected.has(archive.id)}
                           onCheckedChange={() => toggleRow(archive.id)}
+                          disabled={bulkDeleting}
                           aria-label={`Select ${archive.fileName}`}
                         />
                       </TableCell>
@@ -437,7 +415,7 @@ export default function Archives() {
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleDownload(archive)} title="Download archive">
                           <Download className="size-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteOne(archive)} disabled={deleteArchive.isPending} title="Delete archive">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteOne(archive)} disabled={deleteArchive.isPending || bulkDeleting} title="Delete archive">
                           <Trash2 className="size-4" />
                         </Button>
                       </TableCell>

@@ -725,6 +725,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompressionStatus"
+  /archives/delete/start:
+    post:
+      operationId: startArchiveDeletion
+      tags: [archives]
+      summary: Start deletion of selected archives in the background
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteArchivesInput"
+      responses:
+        "202":
+          description: Deletion started without waiting for database or file removal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveDeletionStarted"
+        "400":
+          description: Invalid selection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Another archive deletion is already running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /archives/delete/status:
+    get:
+      operationId: getArchiveDeletionStatus
+      tags: [archives]
+      summary: Current or most recent archive deletion progress and estimated remaining time
+      responses:
+        "200":
+          description: Live deletion status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveDeletionStatus"
   /archives/delete:
     post:
       operationId: deleteArchives
@@ -1192,7 +1234,35 @@ components:
       properties:
         ids:
           type: array
-          items: { type: integer }
+          maxItems: 10000
+          items: { type: integer, minimum: 1, maximum: 2147483647 }
+
+    ArchiveDeletionStarted:
+      type: object
+      required: [started, status]
+      properties:
+        started: { type: boolean }
+        status: { $ref: "#/components/schemas/ArchiveDeletionStatus" }
+
+    ArchiveDeletionStatus:
+      type: object
+      required: [jobId, running, startedAt, finishedAt, totalCount, processedCount, deletedCount, missingCount, failedCount, cleanupFailedCount, progressPercent, elapsedSeconds, etaSeconds, currentFileName, lastError]
+      properties:
+        jobId: { type: ["string", "null"] }
+        running: { type: boolean }
+        startedAt: { type: ["string", "null"], format: date-time }
+        finishedAt: { type: ["string", "null"], format: date-time }
+        totalCount: { type: integer }
+        processedCount: { type: integer }
+        deletedCount: { type: integer }
+        missingCount: { type: integer }
+        failedCount: { type: integer }
+        cleanupFailedCount: { type: integer }
+        progressPercent: { type: number }
+        elapsedSeconds: { type: integer }
+        etaSeconds: { type: ["integer", "null"], description: Estimate from average completed-item duration. Null until enough progress exists or when not running. }
+        currentFileName: { type: ["string", "null"] }
+        lastError: { type: ["string", "null"] }
 
     DeleteResult:
       type: object

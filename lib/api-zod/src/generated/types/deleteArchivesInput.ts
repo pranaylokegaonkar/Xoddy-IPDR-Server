@@ -7,5 +7,6 @@
  */
 
 export interface DeleteArchivesInput {
+  /** @maxItems 10000 */
   ids: number[];
 }

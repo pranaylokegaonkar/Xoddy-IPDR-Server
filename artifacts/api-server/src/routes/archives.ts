@@ -7,6 +7,7 @@ import { runCompression, getCompressionStatus } from "../lib/jobs";
 import { recordAudit } from "../lib/audit";
 import { recordArchiveLog } from "../lib/archive-log";
 import { deleteArchiveFromShare, readArchiveFromShare } from "../lib/archive-storage";
+import { archiveDeletion } from "../lib/archive-deletion";
 
 const router: IRouter = Router();
 
@@ -142,9 +143,47 @@ router.get("/archives/coverage", async (req, res): Promise<void> => {
   res.json({ latestPeriodEnd: latest?.periodEnd.toISOString() ?? null });
 });
 
+router.get("/archives/delete/status", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(archiveDeletion.getStatus());
+});
+
+router.post("/archives/delete/start", (req, res): void => {
+  const parsed = DeleteArchivesBody.safeParse(req.body);
+  if (
+    !parsed.success ||
+    parsed.data.ids.length === 0 ||
+    parsed.data.ids.length > 10000 ||
+    parsed.data.ids.some((id) => !Number.isInteger(id) || id < 1 || id > 2147483647)
+  ) {
+    res.status(400).json({ error: "Select at least one valid archive to delete (maximum 10000)." });
+    return;
+  }
+  const result = archiveDeletion.start(parsed.data.ids, async (status) => {
+    const summary = `Archive deletion: ${status.deletedCount} entries removed, ${status.missingCount} already absent, ${status.failedCount} failed, ${status.cleanupFailedCount} share cleanup failures`;
+    await Promise.all([
+      recordAudit(req, "archive.delete", summary),
+      recordArchiveLog(
+        status.failedCount || status.cleanupFailedCount ? "warning" : "info",
+        "archive.delete",
+        summary,
+      ),
+    ]);
+  });
+  if (!result.started) {
+    res.status(409).json({ error: "An archive deletion is already running. Check its progress." });
+    return;
+  }
+  res.status(202).json(result);
+});
+
 // Bulk delete selected archives. Defined before the `/archives/:id` routes so
 // the literal `delete` segment is never parsed as an id.
 router.post("/archives/delete", async (req, res): Promise<void> => {
+  if (archiveDeletion.getStatus().running) {
+    res.status(409).json({ error: "An archive deletion is already running." });
+    return;
+  }
   const parsed = DeleteArchivesBody.safeParse(req.body);
   if (!parsed.success) {
     res
@@ -233,6 +272,10 @@ router.get("/archives/:id/download", async (req, res): Promise<void> => {
 });
 
 router.delete("/archives/:id", async (req, res): Promise<void> => {
+  if (archiveDeletion.getStatus().running) {
+    res.status(409).json({ error: "An archive deletion is already running." });
+    return;
+  }
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid id" });

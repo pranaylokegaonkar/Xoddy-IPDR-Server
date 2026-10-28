@@ -647,10 +647,52 @@ export const GetCompressionStatusResponse = zod.object({
 
 
 /**
+ * @summary Start deletion of selected archives in the background
+ */
+export const startArchiveDeletionBodyIdsItemMax = 2147483647;
+
+export const startArchiveDeletionBodyIdsMax = 10000;
+
+
+
+export const StartArchiveDeletionBody = zod.object({
+  "ids": zod.array(zod.number().min(1).max(startArchiveDeletionBodyIdsItemMax)).max(startArchiveDeletionBodyIdsMax)
+})
+
+
+/**
+ * @summary Current or most recent archive deletion progress and estimated remaining time
+ */
+export const GetArchiveDeletionStatusResponse = zod.object({
+  "jobId": zod.string().nullable(),
+  "running": zod.boolean(),
+  "startedAt": zod.coerce.date().nullable(),
+  "finishedAt": zod.coerce.date().nullable(),
+  "totalCount": zod.number(),
+  "processedCount": zod.number(),
+  "deletedCount": zod.number(),
+  "missingCount": zod.number(),
+  "failedCount": zod.number(),
+  "cleanupFailedCount": zod.number(),
+  "progressPercent": zod.number(),
+  "elapsedSeconds": zod.number(),
+  "etaSeconds": zod.number().nullable().describe('Estimate from average completed-item duration. Null until enough progress exists or when not running.'),
+  "currentFileName": zod.string().nullable(),
+  "lastError": zod.string().nullable()
+})
+
+
+/**
  * @summary Delete multiple archives by id
  */
+export const deleteArchivesBodyIdsItemMax = 2147483647;
+
+export const deleteArchivesBodyIdsMax = 10000;
+
+
+
 export const DeleteArchivesBody = zod.object({
-  "ids": zod.array(zod.number())
+  "ids": zod.array(zod.number().min(1).max(deleteArchivesBodyIdsItemMax)).max(deleteArchivesBodyIdsMax)
 })
 
 export const DeleteArchivesResponse = zod.object({

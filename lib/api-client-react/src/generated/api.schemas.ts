@@ -434,7 +434,40 @@ export interface FlowArchive {
 }
 
 export interface DeleteArchivesInput {
+  /** @maxItems 10000 */
   ids: number[];
+}
+
+export interface ArchiveDeletionStatus {
+  /** @nullable */
+  jobId: string | null;
+  running: boolean;
+  /** @nullable */
+  startedAt: string | null;
+  /** @nullable */
+  finishedAt: string | null;
+  totalCount: number;
+  processedCount: number;
+  deletedCount: number;
+  missingCount: number;
+  failedCount: number;
+  cleanupFailedCount: number;
+  progressPercent: number;
+  elapsedSeconds: number;
+  /**
+     * Estimate from average completed-item duration. Null until enough progress exists or when not running.
+     * @nullable
+     */
+  etaSeconds: number | null;
+  /** @nullable */
+  currentFileName: string | null;
+  /** @nullable */
+  lastError: string | null;
+}
+
+export interface ArchiveDeletionStarted {
+  started: boolean;
+  status: ArchiveDeletionStatus;
 }
 
 export interface DeleteResult {

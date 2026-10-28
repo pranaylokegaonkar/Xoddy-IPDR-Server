@@ -22,6 +22,8 @@ import type {
 import type {
   AllFlowDeletionStatus,
   ArchiveCoverage,
+  ArchiveDeletionStarted,
+  ArchiveDeletionStatus,
   ArchiveLogPage,
   ArchiveNasOption,
   AuditLogPage,
@@ -2910,6 +2912,154 @@ export function useGetCompressionStatus<TData = Awaited<ReturnType<typeof getCom
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCompressionStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getStartArchiveDeletionUrl = () => {
+
+
+
+
+  return `/api/archives/delete/start`
+}
+
+/**
+ * @summary Start deletion of selected archives in the background
+ */
+export const startArchiveDeletion = async (deleteArchivesInput: DeleteArchivesInput, options?: RequestInit): Promise<ArchiveDeletionStarted> => {
+
+  return customFetch<ArchiveDeletionStarted>(getStartArchiveDeletionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteArchivesInput,)
+  }
+);}
+
+
+
+
+export const getStartArchiveDeletionMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startArchiveDeletion>>, TError,{data: BodyType<DeleteArchivesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startArchiveDeletion>>, TError,{data: BodyType<DeleteArchivesInput>}, TContext> => {
+
+const mutationKey = ['startArchiveDeletion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startArchiveDeletion>>, {data: BodyType<DeleteArchivesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startArchiveDeletion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartArchiveDeletionMutationResult = NonNullable<Awaited<ReturnType<typeof startArchiveDeletion>>>
+    export type StartArchiveDeletionMutationBody = BodyType<DeleteArchivesInput>
+    export type StartArchiveDeletionMutationError = ErrorType<Error>
+
+    /**
+ * @summary Start deletion of selected archives in the background
+ */
+export const useStartArchiveDeletion = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startArchiveDeletion>>, TError,{data: BodyType<DeleteArchivesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startArchiveDeletion>>,
+        TError,
+        {data: BodyType<DeleteArchivesInput>},
+        TContext
+      > => {
+      return useMutation(getStartArchiveDeletionMutationOptions(options));
+    }
+
+export const getGetArchiveDeletionStatusUrl = () => {
+
+
+
+
+  return `/api/archives/delete/status`
+}
+
+/**
+ * @summary Current or most recent archive deletion progress and estimated remaining time
+ */
+export const getArchiveDeletionStatus = async ( options?: RequestInit): Promise<ArchiveDeletionStatus> => {
+
+  return customFetch<ArchiveDeletionStatus>(getGetArchiveDeletionStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArchiveDeletionStatusQueryKey = () => {
+    return [
+    `/api/archives/delete/status`
+    ] as const;
+    }
+
+
+export const getGetArchiveDeletionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getArchiveDeletionStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveDeletionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArchiveDeletionStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchiveDeletionStatus>>> = ({ signal }) => getArchiveDeletionStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArchiveDeletionStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArchiveDeletionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getArchiveDeletionStatus>>>
+export type GetArchiveDeletionStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Current or most recent archive deletion progress and estimated remaining time
+ */
+
+export function useGetArchiveDeletionStatus<TData = Awaited<ReturnType<typeof getArchiveDeletionStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchiveDeletionStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArchiveDeletionStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

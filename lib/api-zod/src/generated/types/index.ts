@@ -8,6 +8,8 @@
 
 export * from './allFlowDeletionStatus';
 export * from './archiveCoverage';
+export * from './archiveDeletionStarted';
+export * from './archiveDeletionStatus';
 export * from './archiveLog';
 export * from './archiveLogLevel';
 export * from './archiveLogPage';
