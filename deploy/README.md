@@ -11,30 +11,17 @@ bash deploy/push-xoddy-ipdr.sh
 
 This only pushes committed changes on `main`; it does not create commits or force-push.
 
-## Install the Ubuntu update command
+## Include the updater during a new Ubuntu installation
 
-The Ubuntu server must already have `/opt/xoddy-ipdr` cloned from the GitHub
-repository. Configure its `origin` remote to authenticate without putting a
-GitHub token in the URL or script. A read-only SSH deploy key is recommended.
-The key must be available to root because the command is run with `sudo`.
-
-Configure the SSH deploy key for the root account (the updater runs through
-`sudo`) and make sure the checkout's `origin` uses that SSH remote. Then pull
-the new script onto the server once:
+After cloning the repository to `/opt/xoddy-ipdr` and configuring the root
+account's read-only SSH deploy key for the GitHub repository, install the
+command as part of the Ubuntu server setup:
 
 ```bash
-sudo git -C /opt/xoddy-ipdr pull --ff-only origin main
+sudo bash /opt/xoddy-ipdr/deploy/install-xoddy-ipdr-update.sh
 ```
 
-Install the command:
-
-```bash
-sudo install -o root -g root -m 0755 \
-  /opt/xoddy-ipdr/deploy/xoddy-ipdr-update.sh \
-  /usr/local/sbin/xoddy-ipdr-update
-```
-
-Then each update is:
+That installs `/usr/local/sbin/xoddy-ipdr-update`. Each later release is:
 
 ```bash
 sudo xoddy-ipdr-update
