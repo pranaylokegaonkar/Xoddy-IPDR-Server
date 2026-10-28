@@ -34,6 +34,7 @@ export default function Archives() {
   const [startDate, setStartDate] = useState(todayIst);
   const [endDate, setEndDate] = useState(todayIst);
   const [nasId, setNasId] = useState("all");
+  const [hasRequestedData, setHasRequestedData] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({
     startDate: todayIst,
     endDate: todayIst,
@@ -59,6 +60,7 @@ export default function Archives() {
   } = useGetArchives(queryParams, {
     query: {
       queryKey: getGetArchivesQueryKey(queryParams),
+      enabled: hasRequestedData,
     },
   });
 
@@ -95,8 +97,9 @@ export default function Archives() {
   const handleShowData = () => {
     if (invalidDateRange) return;
     setSelected(new Set());
-    if (hasPendingFilters) {
+    if (!hasRequestedData || hasPendingFilters) {
       setAppliedFilters({ startDate, endDate, nasId });
+      setHasRequestedData(true);
     } else {
       void refetch();
       queryClient.invalidateQueries({ queryKey: getGetArchiveCoverageQueryKey() });
@@ -112,8 +115,9 @@ export default function Archives() {
     });
   };
   const allSelected =
-    !!archives && archives.length > 0 && archives.every((archive) => selected.has(archive.id));
+    hasRequestedData && !!archives && archives.length > 0 && archives.every((archive) => selected.has(archive.id));
   const toggleAll = () => {
+    if (!hasRequestedData) return;
     if (allSelected) setSelected(new Set());
     else setSelected(new Set((archives ?? []).map((a) => a.id)));
   };
@@ -265,7 +269,8 @@ export default function Archives() {
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
           onNasIdChange={setNasId}
-          isFetching={isFetching}
+          isFetching={hasRequestedData && isFetching}
+          hasRequestedData={hasRequestedData}
           invalidDateRange={invalidDateRange}
           onShowData={handleShowData}
           hasPendingFilters={hasPendingFilters}
@@ -329,7 +334,7 @@ export default function Archives() {
                     <Checkbox
                       checked={allSelected}
                       onCheckedChange={toggleAll}
-                      disabled={bulkDeleting}
+                      disabled={bulkDeleting || !hasRequestedData}
                       aria-label="Select all archives"
                     />
                   </TableHead>
@@ -345,7 +350,13 @@ export default function Archives() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {!hasRequestedData ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="h-48 text-center text-muted-foreground">
+                      Choose your filters and click Show Data to load archives.
+                    </TableCell>
+                  </TableRow>
+                ) : isLoading ? (
                   <TableRow><TableCell colSpan={10} className="h-24 text-center">Loading...</TableCell></TableRow>
                 ) : isError ? (
                   <TableRow>

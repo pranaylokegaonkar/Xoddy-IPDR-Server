@@ -23,6 +23,7 @@ interface ArchiveFiltersProps {
   invalidDateRange: boolean;
   onShowData: () => void;
   hasPendingFilters: boolean;
+  hasRequestedData: boolean;
 }
 
 const istFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -37,15 +38,16 @@ const istFormatter = new Intl.DateTimeFormat("en-GB", {
 
 export function ArchiveFilters({
   startDate, endDate, nasId, appliedNasId, onStartDateChange, onEndDateChange,
-  onNasIdChange, isFetching, invalidDateRange, onShowData, hasPendingFilters,
+  onNasIdChange, isFetching, invalidDateRange, onShowData, hasPendingFilters, hasRequestedData,
 }: ArchiveFiltersProps) {
   const coverageParams = appliedNasId === "all" ? undefined : { nasId: Number(appliedNasId) };
   const { data: coverage, isLoading: isCoverageLoading, isError: isCoverageError } =
     useGetArchiveCoverage(coverageParams, {
       query: {
         queryKey: getGetArchiveCoverageQueryKey(coverageParams),
+        enabled: hasRequestedData,
         staleTime: 15000,
-        refetchInterval: 30000,
+        refetchInterval: hasRequestedData ? 30000 : false,
       },
     });
   const {
@@ -160,7 +162,9 @@ export function ArchiveFilters({
             data-testid="text-archive-data-available-till"
             aria-live="polite"
           >
-            {isCoverageLoading
+            {!hasRequestedData
+              ? "Click Show Data"
+              : isCoverageLoading
               ? "Loading…"
               : isCoverageError
                 ? "Unable to load"
