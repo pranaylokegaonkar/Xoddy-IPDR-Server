@@ -57,7 +57,21 @@ router.get("/archives", async (req, res): Promise<void> => {
   }
 
   const rows = await db
-    .select()
+    // Archive payloads can be hundreds of MB each. The list must never read
+    // them into API memory; the download route fetches content on demand.
+    .select({
+      id: flowArchivesTable.id,
+      fileName: flowArchivesTable.fileName,
+      nasId: flowArchivesTable.nasId,
+      nasName: flowArchivesTable.nasName,
+      nasIp: flowArchivesTable.nasIp,
+      recordCount: flowArchivesTable.recordCount,
+      originalBytes: flowArchivesTable.originalBytes,
+      compressedBytes: flowArchivesTable.compressedBytes,
+      periodStart: flowArchivesTable.periodStart,
+      periodEnd: flowArchivesTable.periodEnd,
+      createdAt: flowArchivesTable.createdAt,
+    })
     .from(flowArchivesTable)
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(flowArchivesTable.createdAt));

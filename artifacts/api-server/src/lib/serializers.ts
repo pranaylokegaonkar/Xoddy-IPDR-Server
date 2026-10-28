@@ -107,7 +107,7 @@ export function serializeNotification(row: NotificationRow) {
   };
 }
 
-export function serializeArchive(row: FlowArchiveRow) {
+export function serializeArchive(row: Omit<FlowArchiveRow, "payload" | "storageKey">) {
   return {
     id: row.id,
     fileName: row.fileName,

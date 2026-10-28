@@ -11,3 +11,4 @@
 - [orval query options](orval-query-options.md) — generated useGetX hooks need an explicit queryKey (via getGetXQueryKey) whenever you pass a query options object, else TS2741.
 - [Ubuntu update environment](ubuntu-update-environment.md) — the updater must use the running service's environment, not assume a second env file targets the same database.
 - [pnpm approval compatibility](pnpm-build-approvals.md) — newer pnpm can append build-approval placeholders, leaving a successful update's checkout dirty and blocking the next release.
+- [Archive list performance](archive-list-performance.md) — few archive rows can still contain huge payloads; list metadata without fetching compressed contents.
