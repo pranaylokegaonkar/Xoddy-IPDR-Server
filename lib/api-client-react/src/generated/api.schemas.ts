@@ -5,6 +5,84 @@
  * Xoddy IPDR Server API - MikroTik Traffic Flow (NetFlow/IPFIX) collector
  * OpenAPI spec version: 0.1.0
  */
+export interface ArchiveRangeInput {
+  startAt: string;
+  endAt: string;
+  /** @minimum 1 */
+  nasId?: number;
+}
+
+export type ArchiveWorkspaceInput = ArchiveRangeInput & {
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  archiveIds: number[];
+};
+
+export type FlowExportFormat = typeof FlowExportFormat[keyof typeof FlowExportFormat];
+
+
+export const FlowExportFormat = {
+  text: 'text',
+  excel: 'excel',
+} as const;
+
+export interface FlowExport {
+  format: FlowExportFormat;
+  srcIp?: string;
+  dstIp?: string;
+  srcNatIp?: string;
+  dstNatIp?: string;
+  nasId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export type ArchiveExportInput = FlowExport & {
+  releaseAfterExport?: boolean;
+};
+
+export interface OldSearchRelease {
+  released: boolean;
+}
+
+export type OldSearchSessionState = typeof OldSearchSessionState[keyof typeof OldSearchSessionState];
+
+
+export const OldSearchSessionState = {
+  preparing: 'preparing',
+  ready: 'ready',
+  error: 'error',
+  released: 'released',
+  expired: 'expired',
+} as const;
+
+export interface OldSearchSession {
+  id: string;
+  state: OldSearchSessionState;
+  archiveIds: number[];
+  totalArchives: number;
+  processedArchives: number;
+  scannedRecords: number;
+  recordCount: number;
+  bytesWritten: number;
+  estimatedBytes: number;
+  progressPercent: number;
+  expiresAt: string;
+  /** @nullable */
+  error: string | null;
+  startAt: string;
+  endAt: string;
+  /** @nullable */
+  nasId: number | null;
+  createdAt: string;
+  maxWorkspaceBytes: number;
+  exportLimit: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -363,27 +441,6 @@ export interface FlowSearchResult {
   total: number;
   page: number;
   pageSize: number;
-}
-
-export type FlowExportFormat = typeof FlowExportFormat[keyof typeof FlowExportFormat];
-
-
-export const FlowExportFormat = {
-  text: 'text',
-  excel: 'excel',
-} as const;
-
-export interface FlowExport {
-  format: FlowExportFormat;
-  srcIp?: string;
-  dstIp?: string;
-  srcNatIp?: string;
-  dstNatIp?: string;
-  nasId?: number;
-  dateFrom?: string;
-  dateTo?: string;
-  startTime?: string;
-  endTime?: string;
 }
 
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];

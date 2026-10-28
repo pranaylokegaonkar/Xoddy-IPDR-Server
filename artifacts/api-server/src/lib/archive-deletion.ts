@@ -3,21 +3,25 @@ import { db, flowArchivesTable } from "@workspace/db";
 import { ArchiveDeletionJob } from "./archive-deletion-job";
 import { deleteArchiveFromShare } from "./archive-storage";
 import { logger } from "./logger";
+import { withArchiveDeletionLocks } from "./archive-locks";
 
 export const archiveDeletion = new ArchiveDeletionJob({
   async deleteOne(id, setFileName) {
     // Never fetch the compressed payload. Delete one selected archive per
     // statement so large TOAST payloads do not form a single huge transaction.
-    const [row] = await db.select({
+    const row = await withArchiveDeletionLocks([id], async (tx) => {
+    const [found] = await tx.select({
       id: flowArchivesTable.id,
       fileName: flowArchivesTable.fileName,
       storageKey: flowArchivesTable.storageKey,
     }).from(flowArchivesTable).where(eq(flowArchivesTable.id, id));
-    if (!row) return "missing";
-    setFileName(row.fileName);
-    const deleted = await db.delete(flowArchivesTable)
+    if (!found) return null;
+    setFileName(found.fileName);
+    const deleted = await tx.delete(flowArchivesTable)
       .where(eq(flowArchivesTable.id, id)).returning({ id: flowArchivesTable.id });
-    if (!deleted.length) return "missing";
+    return deleted.length ? found : null;
+    });
+    if (!row) return "missing";
     if (row.storageKey) {
       try { await deleteArchiveFromShare(row.storageKey); }
       catch (error) {

@@ -80,6 +80,10 @@ export async function readArchiveFromShare(storageKey: string): Promise<Buffer> 
   return readFile(archivePath(await archiveRoot(), storageKey));
 }
 
+export async function streamArchiveFromShare(storageKey: string): Promise<Readable> {
+  return createReadStream(archivePath(await archiveRoot(), storageKey));
+}
+
 export async function deleteArchiveFromShare(storageKey: string): Promise<void> {
   await rm(archivePath(await archiveRoot(), storageKey), { force: true });
 }

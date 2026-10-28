@@ -24,8 +24,11 @@ import type {
   ArchiveCoverage,
   ArchiveDeletionStarted,
   ArchiveDeletionStatus,
+  ArchiveExportInput,
   ArchiveLogPage,
   ArchiveNasOption,
+  ArchiveRangeInput,
+  ArchiveWorkspaceInput,
   AuditLogPage,
   CompressionStarted,
   CompressionStatus,
@@ -54,6 +57,8 @@ import type {
   NasStatusUpdate,
   NasUpdate,
   Notification,
+  OldSearchRelease,
+  OldSearchSession,
   SystemResources,
   SystemUser,
   TopTalker,
@@ -73,6 +78,474 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
+
+export const getFindOldSearchArchivesUrl = () => {
+
+
+
+
+  return `/api/old-search/archives`
+}
+
+export const findOldSearchArchives = async (archiveRangeInput: ArchiveRangeInput, options?: RequestInit): Promise<FlowArchive[]> => {
+
+  return customFetch<FlowArchive[]>(getFindOldSearchArchivesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      archiveRangeInput,)
+  }
+);}
+
+
+
+
+export const getFindOldSearchArchivesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof findOldSearchArchives>>, TError,{data: BodyType<ArchiveRangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof findOldSearchArchives>>, TError,{data: BodyType<ArchiveRangeInput>}, TContext> => {
+
+const mutationKey = ['findOldSearchArchives'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof findOldSearchArchives>>, {data: BodyType<ArchiveRangeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  findOldSearchArchives(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FindOldSearchArchivesMutationResult = NonNullable<Awaited<ReturnType<typeof findOldSearchArchives>>>
+    export type FindOldSearchArchivesMutationBody = BodyType<ArchiveRangeInput>
+    export type FindOldSearchArchivesMutationError = ErrorType<unknown>
+
+    export const useFindOldSearchArchives = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof findOldSearchArchives>>, TError,{data: BodyType<ArchiveRangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof findOldSearchArchives>>,
+        TError,
+        {data: BodyType<ArchiveRangeInput>},
+        TContext
+      > => {
+      return useMutation(getFindOldSearchArchivesMutationOptions(options));
+    }
+
+export const getListOldSearchSessionsUrl = () => {
+
+
+
+
+  return `/api/old-search/sessions`
+}
+
+export const listOldSearchSessions = async ( options?: RequestInit): Promise<OldSearchSession[]> => {
+
+  return customFetch<OldSearchSession[]>(getListOldSearchSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOldSearchSessionsQueryKey = () => {
+    return [
+    `/api/old-search/sessions`
+    ] as const;
+    }
+
+
+export const getListOldSearchSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listOldSearchSessions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOldSearchSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOldSearchSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOldSearchSessions>>> = ({ signal }) => listOldSearchSessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOldSearchSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOldSearchSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listOldSearchSessions>>>
+export type ListOldSearchSessionsQueryError = ErrorType<unknown>
+
+
+
+export function useListOldSearchSessions<TData = Awaited<ReturnType<typeof listOldSearchSessions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOldSearchSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOldSearchSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPrepareOldSearchSessionUrl = () => {
+
+
+
+
+  return `/api/old-search/sessions`
+}
+
+export const prepareOldSearchSession = async (archiveWorkspaceInput: ArchiveWorkspaceInput, options?: RequestInit): Promise<OldSearchSession> => {
+
+  return customFetch<OldSearchSession>(getPrepareOldSearchSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      archiveWorkspaceInput,)
+  }
+);}
+
+
+
+
+export const getPrepareOldSearchSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareOldSearchSession>>, TError,{data: BodyType<ArchiveWorkspaceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof prepareOldSearchSession>>, TError,{data: BodyType<ArchiveWorkspaceInput>}, TContext> => {
+
+const mutationKey = ['prepareOldSearchSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof prepareOldSearchSession>>, {data: BodyType<ArchiveWorkspaceInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  prepareOldSearchSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrepareOldSearchSessionMutationResult = NonNullable<Awaited<ReturnType<typeof prepareOldSearchSession>>>
+    export type PrepareOldSearchSessionMutationBody = BodyType<ArchiveWorkspaceInput>
+    export type PrepareOldSearchSessionMutationError = ErrorType<unknown>
+
+    export const usePrepareOldSearchSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareOldSearchSession>>, TError,{data: BodyType<ArchiveWorkspaceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof prepareOldSearchSession>>,
+        TError,
+        {data: BodyType<ArchiveWorkspaceInput>},
+        TContext
+      > => {
+      return useMutation(getPrepareOldSearchSessionMutationOptions(options));
+    }
+
+export const getGetOldSearchSessionUrl = (id: string,) => {
+
+
+
+
+  return `/api/old-search/sessions/${id}`
+}
+
+export const getOldSearchSession = async (id: string, options?: RequestInit): Promise<OldSearchSession> => {
+
+  return customFetch<OldSearchSession>(getGetOldSearchSessionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOldSearchSessionQueryKey = (id: string,) => {
+    return [
+    `/api/old-search/sessions/${id}`
+    ] as const;
+    }
+
+
+export const getGetOldSearchSessionQueryOptions = <TData = Awaited<ReturnType<typeof getOldSearchSession>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOldSearchSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOldSearchSessionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOldSearchSession>>> = ({ signal }) => getOldSearchSession(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOldSearchSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOldSearchSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getOldSearchSession>>>
+export type GetOldSearchSessionQueryError = ErrorType<unknown>
+
+
+
+export function useGetOldSearchSession<TData = Awaited<ReturnType<typeof getOldSearchSession>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOldSearchSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOldSearchSessionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReleaseOldSearchSessionUrl = (id: string,) => {
+
+
+
+
+  return `/api/old-search/sessions/${id}`
+}
+
+export const releaseOldSearchSession = async (id: string, options?: RequestInit): Promise<OldSearchRelease> => {
+
+  return customFetch<OldSearchRelease>(getReleaseOldSearchSessionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getReleaseOldSearchSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseOldSearchSession>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof releaseOldSearchSession>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['releaseOldSearchSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof releaseOldSearchSession>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  releaseOldSearchSession(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReleaseOldSearchSessionMutationResult = NonNullable<Awaited<ReturnType<typeof releaseOldSearchSession>>>
+
+    export type ReleaseOldSearchSessionMutationError = ErrorType<unknown>
+
+    export const useReleaseOldSearchSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseOldSearchSession>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof releaseOldSearchSession>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getReleaseOldSearchSessionMutationOptions(options));
+    }
+
+export const getSearchOldSearchSessionUrl = (id: string,) => {
+
+
+
+
+  return `/api/old-search/sessions/${id}/search`
+}
+
+export const searchOldSearchSession = async (id: string,
+    flowSearch: FlowSearch, options?: RequestInit): Promise<FlowSearchResult> => {
+
+  return customFetch<FlowSearchResult>(getSearchOldSearchSessionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      flowSearch,)
+  }
+);}
+
+
+
+
+export const getSearchOldSearchSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchOldSearchSession>>, TError,{id: string;data: BodyType<FlowSearch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof searchOldSearchSession>>, TError,{id: string;data: BodyType<FlowSearch>}, TContext> => {
+
+const mutationKey = ['searchOldSearchSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchOldSearchSession>>, {id: string;data: BodyType<FlowSearch>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  searchOldSearchSession(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SearchOldSearchSessionMutationResult = NonNullable<Awaited<ReturnType<typeof searchOldSearchSession>>>
+    export type SearchOldSearchSessionMutationBody = BodyType<FlowSearch>
+    export type SearchOldSearchSessionMutationError = ErrorType<unknown>
+
+    export const useSearchOldSearchSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchOldSearchSession>>, TError,{id: string;data: BodyType<FlowSearch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof searchOldSearchSession>>,
+        TError,
+        {id: string;data: BodyType<FlowSearch>},
+        TContext
+      > => {
+      return useMutation(getSearchOldSearchSessionMutationOptions(options));
+    }
+
+export const getExportOldSearchSessionUrl = (id: string,) => {
+
+
+
+
+  return `/api/old-search/sessions/${id}/export`
+}
+
+export const exportOldSearchSession = async (id: string,
+    archiveExportInput: ArchiveExportInput, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportOldSearchSessionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      archiveExportInput,)
+  }
+);}
+
+
+
+
+export const getExportOldSearchSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportOldSearchSession>>, TError,{id: string;data: BodyType<ArchiveExportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportOldSearchSession>>, TError,{id: string;data: BodyType<ArchiveExportInput>}, TContext> => {
+
+const mutationKey = ['exportOldSearchSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportOldSearchSession>>, {id: string;data: BodyType<ArchiveExportInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  exportOldSearchSession(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExportOldSearchSessionMutationResult = NonNullable<Awaited<ReturnType<typeof exportOldSearchSession>>>
+    export type ExportOldSearchSessionMutationBody = BodyType<ArchiveExportInput>
+    export type ExportOldSearchSessionMutationError = ErrorType<unknown>
+
+    export const useExportOldSearchSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportOldSearchSession>>, TError,{id: string;data: BodyType<ArchiveExportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof exportOldSearchSession>>,
+        TError,
+        {id: string;data: BodyType<ArchiveExportInput>},
+        TContext
+      > => {
+      return useMutation(getExportOldSearchSessionMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

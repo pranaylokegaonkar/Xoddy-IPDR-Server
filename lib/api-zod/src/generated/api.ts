@@ -8,6 +8,170 @@
 import * as zod from 'zod';
 
 
+
+
+
+export const FindOldSearchArchivesBody = zod.object({
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "nasId": zod.number().min(1).optional()
+})
+
+export const FindOldSearchArchivesResponseItem = zod.object({
+  "id": zod.number(),
+  "fileName": zod.string(),
+  "nasId": zod.number().nullable(),
+  "nasName": zod.string().nullable(),
+  "nasIp": zod.string().nullable(),
+  "recordCount": zod.number(),
+  "originalBytes": zod.number(),
+  "compressedBytes": zod.number(),
+  "periodStart": zod.coerce.date(),
+  "periodEnd": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+})
+export const FindOldSearchArchivesResponse = zod.array(FindOldSearchArchivesResponseItem)
+
+
+export const ListOldSearchSessionsResponseItem = zod.object({
+  "id": zod.string(),
+  "state": zod.enum(['preparing', 'ready', 'error', 'released', 'expired']),
+  "archiveIds": zod.array(zod.number()),
+  "totalArchives": zod.number(),
+  "processedArchives": zod.number(),
+  "scannedRecords": zod.number(),
+  "recordCount": zod.number(),
+  "bytesWritten": zod.number(),
+  "estimatedBytes": zod.number(),
+  "progressPercent": zod.number(),
+  "expiresAt": zod.coerce.date(),
+  "error": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "nasId": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "maxWorkspaceBytes": zod.number(),
+  "exportLimit": zod.number()
+})
+export const ListOldSearchSessionsResponse = zod.array(ListOldSearchSessionsResponseItem)
+
+
+
+
+export const prepareOldSearchSessionBodyTwoArchiveIdsMax = 100;
+
+
+
+export const PrepareOldSearchSessionBody = zod.object({
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "nasId": zod.number().min(1).optional()
+}).and(zod.object({
+  "archiveIds": zod.array(zod.number().min(1)).min(1).max(prepareOldSearchSessionBodyTwoArchiveIdsMax)
+}))
+
+
+export const GetOldSearchSessionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetOldSearchSessionResponse = zod.object({
+  "id": zod.string(),
+  "state": zod.enum(['preparing', 'ready', 'error', 'released', 'expired']),
+  "archiveIds": zod.array(zod.number()),
+  "totalArchives": zod.number(),
+  "processedArchives": zod.number(),
+  "scannedRecords": zod.number(),
+  "recordCount": zod.number(),
+  "bytesWritten": zod.number(),
+  "estimatedBytes": zod.number(),
+  "progressPercent": zod.number(),
+  "expiresAt": zod.coerce.date(),
+  "error": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "endAt": zod.coerce.date(),
+  "nasId": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "maxWorkspaceBytes": zod.number(),
+  "exportLimit": zod.number()
+})
+
+
+export const ReleaseOldSearchSessionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ReleaseOldSearchSessionResponse = zod.object({
+  "released": zod.boolean()
+})
+
+
+export const SearchOldSearchSessionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SearchOldSearchSessionBody = zod.object({
+  "srcIp": zod.string().optional(),
+  "dstIp": zod.string().optional(),
+  "srcNatIp": zod.string().optional(),
+  "dstNatIp": zod.string().optional(),
+  "nasId": zod.number().optional(),
+  "dateFrom": zod.string().optional(),
+  "dateTo": zod.string().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "page": zod.number().optional(),
+  "pageSize": zod.number().optional()
+})
+
+export const SearchOldSearchSessionResponse = zod.object({
+  "records": zod.array(zod.object({
+  "id": zod.number(),
+  "nasId": zod.number(),
+  "nasName": zod.string(),
+  "srcIp": zod.string(),
+  "dstIp": zod.string(),
+  "srcNatIp": zod.string().nullish(),
+  "dstNatIp": zod.string().nullish(),
+  "srcPort": zod.number(),
+  "dstPort": zod.number(),
+  "protocol": zod.number(),
+  "protocolName": zod.string(),
+  "bytes": zod.number(),
+  "packets": zod.number(),
+  "flowVersion": zod.string(),
+  "startTime": zod.coerce.date(),
+  "endTime": zod.coerce.date(),
+  "flowDate": zod.string()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+export const ExportOldSearchSessionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const exportOldSearchSessionBodyTwoReleaseAfterExportDefault = false;
+
+export const ExportOldSearchSessionBody = zod.object({
+  "format": zod.enum(['text', 'excel']),
+  "srcIp": zod.string().optional(),
+  "dstIp": zod.string().optional(),
+  "srcNatIp": zod.string().optional(),
+  "dstNatIp": zod.string().optional(),
+  "nasId": zod.number().optional(),
+  "dateFrom": zod.string().optional(),
+  "dateTo": zod.string().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional()
+}).and(zod.object({
+  "releaseAfterExport": zod.boolean().default(exportOldSearchSessionBodyTwoReleaseAfterExportDefault)
+}))
+
+
 /**
  * Returns server health status
  * @summary Health check

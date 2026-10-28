@@ -27,6 +27,106 @@ tags:
   - name: archives
     description: Compressed flow record archives
 paths:
+  /old-search/archives:
+    post:
+      operationId: findOldSearchArchives
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArchiveRangeInput" }
+      responses:
+        "200":
+          description: Archives overlapping the requested IST timestamp range
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/FlowArchive" }
+  /old-search/sessions:
+    get:
+      operationId: listOldSearchSessions
+      responses:
+        "200":
+          description: Only this user's temporary workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OldSearchSession" }
+    post:
+      operationId: prepareOldSearchSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArchiveWorkspaceInput" }
+      responses:
+        "202":
+          description: Protected workspace queued for preparation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OldSearchSession" }
+  /old-search/sessions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getOldSearchSession
+      responses:
+        "200":
+          description: Preparation progress and expiry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OldSearchSession" }
+    delete:
+      operationId: releaseOldSearchSession
+      responses:
+        "200":
+          description: Temporary data removed; original archives retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OldSearchRelease" }
+  /old-search/sessions/{id}/search:
+    post:
+      operationId: searchOldSearchSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FlowSearch" }
+      responses:
+        "200":
+          description: Matching temporary records; originals never restored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FlowSearchResult" }
+  /old-search/sessions/{id}/export:
+    post:
+      operationId: exportOldSearchSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArchiveExportInput" }
+      responses:
+        "200":
+          description: Matching records; maximum 50000, never silently truncated
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
   /healthz:
     get:
       operationId: healthCheck
@@ -819,6 +919,59 @@ components:
       schema:
         type: integer
   schemas:
+    ArchiveRangeInput:
+      type: object
+      required: [startAt, endAt]
+      properties:
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        nasId: { type: integer, minimum: 1 }
+    ArchiveWorkspaceInput:
+      allOf:
+        - $ref: "#/components/schemas/ArchiveRangeInput"
+        - type: object
+          required: [archiveIds]
+          properties:
+            archiveIds:
+              type: array
+              minItems: 1
+              maxItems: 100
+              items: { type: integer, minimum: 1 }
+    ArchiveExportInput:
+      allOf:
+        - $ref: "#/components/schemas/FlowExport"
+        - type: object
+          properties:
+            releaseAfterExport: { type: boolean, default: false }
+    OldSearchRelease:
+      type: object
+      required: [released]
+      properties:
+        released: { type: boolean }
+    OldSearchSession:
+      type: object
+      required: [id, state, archiveIds, totalArchives, processedArchives, scannedRecords, recordCount, bytesWritten, estimatedBytes, progressPercent, expiresAt, error, startAt, endAt, nasId, createdAt, maxWorkspaceBytes, exportLimit]
+      properties:
+        id: { type: string }
+        state: { type: string, enum: [preparing, ready, error, released, expired] }
+        archiveIds:
+          type: array
+          items: { type: integer }
+        totalArchives: { type: integer }
+        processedArchives: { type: integer }
+        scannedRecords: { type: integer }
+        recordCount: { type: integer }
+        bytesWritten: { type: integer }
+        estimatedBytes: { type: integer }
+        progressPercent: { type: integer }
+        expiresAt: { type: string, format: date-time }
+        error: { type: ["string", "null"] }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        nasId: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+        maxWorkspaceBytes: { type: integer }
+        exportLimit: { type: integer }
     HealthStatus:
       type: object
       properties:

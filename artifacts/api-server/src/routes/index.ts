@@ -10,6 +10,7 @@ import flowsRouter from "./flows";
 import notificationsRouter from "./notifications";
 import archivesRouter from "./archives";
 import archiveLogsRouter from "./archive-logs";
+import oldSearchRouter from "./old-search";
 
 const router: IRouter = Router();
 
@@ -25,6 +26,7 @@ router.use(dashboardRouter);
 router.use(usersRouter);
 router.use(nasRouter);
 router.use(flowsRouter);
+router.use(oldSearchRouter);
 router.use(notificationsRouter);
 router.use(archivesRouter);
 router.use(archiveLogsRouter);

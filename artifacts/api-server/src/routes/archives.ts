@@ -8,6 +8,7 @@ import { recordAudit } from "../lib/audit";
 import { recordArchiveLog } from "../lib/archive-log";
 import { deleteArchiveFromShare, readArchiveFromShare } from "../lib/archive-storage";
 import { archiveDeletion } from "../lib/archive-deletion";
+import { withArchiveDeletionLocks, ArchiveLockedError } from "../lib/archive-locks";
 
 const router: IRouter = Router();
 
@@ -196,7 +197,10 @@ router.post("/archives/delete", async (req, res): Promise<void> => {
     res.json({ deleted: 0 });
     return;
   }
-  const rows = await db
+  let removal;
+  try {
+  removal = await withArchiveDeletionLocks(ids, async (tx) => {
+  const rows = await tx
     .select({
       id: flowArchivesTable.id,
       fileName: flowArchivesTable.fileName,
@@ -204,10 +208,17 @@ router.post("/archives/delete", async (req, res): Promise<void> => {
     })
     .from(flowArchivesTable)
     .where(inArray(flowArchivesTable.id, ids));
-  const deleted = await db
+  const deleted = await tx
     .delete(flowArchivesTable)
     .where(inArray(flowArchivesTable.id, ids))
     .returning({ id: flowArchivesTable.id });
+  return { rows, deleted };
+  });
+  } catch (err) {
+    if (!(err instanceof ArchiveLockedError)) throw err;
+    res.status(409).json({ error: err.message }); return;
+  }
+  const { rows, deleted } = removal;
   const deletedIds = new Set(deleted.map((row) => row.id));
   for (const row of rows) {
     if (!row.storageKey || !deletedIds.has(row.id)) continue;
@@ -281,10 +292,19 @@ router.delete("/archives/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [row] = await db
+  let row;
+  try {
+  row = await withArchiveDeletionLocks([id], async (tx) => {
+    const [deleted] = await tx
     .delete(flowArchivesTable)
     .where(eq(flowArchivesTable.id, id))
-    .returning();
+    .returning({ id: flowArchivesTable.id, storageKey: flowArchivesTable.storageKey, fileName: flowArchivesTable.fileName });
+    return deleted;
+  });
+  } catch (err) {
+    if (!(err instanceof ArchiveLockedError)) throw err;
+    res.status(409).json({ error: err.message }); return;
+  }
   if (!row) {
     res.status(404).json({ error: "Archive not found" });
     return;
