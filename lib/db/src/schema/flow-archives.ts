@@ -34,6 +34,7 @@ export const flowArchivesTable = pgTable("flow_archives", {
   index("flow_archives_share_pending_idx")
     .on(t.id)
     .where(sql`${t.storageKey} IS NOT NULL AND ${t.payload} IS NOT NULL`),
+  index("flow_archives_period_start_idx").on(t.periodStart),
 ]);
 
 export type FlowArchiveRow = typeof flowArchivesTable.$inferSelect;

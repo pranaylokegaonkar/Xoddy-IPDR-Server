@@ -573,6 +573,15 @@ export const MarkAllNotificationsReadResponse = zod.object({
 /**
  * @summary List compressed flow archives
  */
+export const getArchivesQueryStartDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getArchivesQueryEndDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetArchivesQueryParams = zod.object({
+  "startDate": zod.coerce.string().regex(getArchivesQueryStartDateRegExp).optional().describe('Include archive windows starting on or after this IST calendar date (YYYY-MM-DD).'),
+  "endDate": zod.coerce.string().regex(getArchivesQueryEndDateRegExp).optional().describe('Include archive windows starting on or before this IST calendar date (YYYY-MM-DD).')
+})
+
 export const GetArchivesResponseItem = zod.object({
   "id": zod.number(),
   "fileName": zod.string(),

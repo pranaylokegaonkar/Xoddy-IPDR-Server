@@ -12,6 +12,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Archive as ArchiveIcon, FileArchive, Loader2, Zap, Download, Trash2 } from "lucide-react";
@@ -22,8 +24,27 @@ import { getToken } from "@/lib/token";
 export default function Archives() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
-  const { data: archives, isLoading } = useGetArchives({ query: { queryKey: getGetArchivesQueryKey() } });
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const archiveParams = {
+    ...(startDate ? { startDate } : {}),
+    ...(endDate ? { endDate } : {}),
+  };
+  const queryParams = Object.keys(archiveParams).length ? archiveParams : undefined;
+  const invalidDateRange = !!startDate && !!endDate && startDate > endDate;
+  const {
+    data: archives,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useGetArchives(queryParams, {
+    query: {
+      queryKey: getGetArchivesQueryKey(queryParams),
+      enabled: !invalidDateRange,
+    },
+  });
 
   // Live compression status. Poll fast while running, slow when idle so we still
   // notice a scheduled (every-2h) run kicking off without the user clicking.
@@ -50,6 +71,10 @@ export default function Archives() {
 
   // Row selection for bulk delete.
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    setSelected(new Set());
+  }, [startDate, endDate]);
+
   const toggleRow = (id: number) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -58,7 +83,8 @@ export default function Archives() {
       return next;
     });
   };
-  const allSelected = !!archives && archives.length > 0 && selected.size === archives.length;
+  const allSelected =
+    !!archives && archives.length > 0 && archives.every((archive) => selected.has(archive.id));
   const toggleAll = () => {
     if (allSelected) setSelected(new Set());
     else setSelected(new Set((archives ?? []).map((a) => a.id)));
@@ -223,6 +249,62 @@ export default function Archives() {
         </div>
       </div>
 
+      <div className="px-8 pb-4">
+        <Card className="shadow-sm border-border">
+          <CardContent className="flex flex-wrap items-end gap-4 p-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="archive-start-date">Start date</Label>
+              <Input
+                id="archive-start-date"
+                data-testid="input-archive-start-date"
+                type="date"
+                value={startDate}
+                max={endDate || undefined}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="w-full sm:w-48"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="archive-end-date">End date</Label>
+              <Input
+                id="archive-end-date"
+                data-testid="input-archive-end-date"
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(event) => setEndDate(event.target.value)}
+                className="w-full sm:w-48"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="button-clear-archive-dates"
+              onClick={() => {
+                setStartDate("");
+                setEndDate("");
+              }}
+              disabled={!startDate && !endDate}
+            >
+              Clear dates
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Filters archive-window dates in IST.
+            </span>
+            {isFetching && (
+              <span className="text-xs text-muted-foreground" role="status">
+                Updating archives…
+              </span>
+            )}
+            {invalidDateRange && (
+              <span className="text-xs text-destructive" role="alert">
+                End date must be on or after the start date.
+              </span>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {status?.running && (
         <div className="px-8 pb-4">
           <Card className="border-primary/30 bg-primary/5 shadow-sm">
@@ -297,13 +379,32 @@ export default function Archives() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={10} className="h-24 text-center">Loading...</TableCell></TableRow>
+                ) : invalidDateRange ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                      Choose an end date on or after the start date.
+                    </TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="h-24 text-center">
+                      <div className="space-y-2">
+                        <p className="text-destructive">Could not load archives.</p>
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                          Try again
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : archives?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <FileArchive className="size-10 mb-2 opacity-20" />
-                        <p>No archives generated yet</p>
-                        <p className="text-xs mt-1">Archives are automatically created every 2 hours</p>
+                        <p>{startDate || endDate ? "No archives match these dates" : "No archives generated yet"}</p>
+                        {!startDate && !endDate && (
+                          <p className="text-xs mt-1">Archives are automatically created every 2 hours</p>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

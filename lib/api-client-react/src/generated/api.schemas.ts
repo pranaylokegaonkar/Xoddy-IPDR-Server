@@ -488,3 +488,16 @@ export const GetArchiveLogsLevel = {
   error: 'error',
 } as const;
 
+export type GetArchivesParams = {
+/**
+ * Include archive windows starting on or after this IST calendar date (YYYY-MM-DD).
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+startDate?: string;
+/**
+ * Include archive windows starting on or before this IST calendar date (YYYY-MM-DD).
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+endDate?: string;
+};
+

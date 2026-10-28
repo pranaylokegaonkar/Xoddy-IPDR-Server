@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, type SQL } from "drizzle-orm";
 import { db, flowArchivesTable } from "@workspace/db";
 import { DeleteArchivesBody } from "@workspace/api-zod";
 import { serializeArchive } from "../lib/serializers";
@@ -10,10 +10,56 @@ import { deleteArchiveFromShare, readArchiveFromShare } from "../lib/archive-sto
 
 const router: IRouter = Router();
 
-router.get("/archives", async (_req, res) => {
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseIstDateBoundary(value: unknown): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const utcMidnight = new Date(`${value}T00:00:00.000Z`);
+  if (
+    Number.isNaN(utcMidnight.getTime()) ||
+    utcMidnight.toISOString().slice(0, 10) !== value
+  ) {
+    return null;
+  }
+  return new Date(utcMidnight.getTime() - IST_OFFSET_MS);
+}
+
+router.get("/archives", async (req, res): Promise<void> => {
+  const rawStartDate = req.query.startDate;
+  const rawEndDate = req.query.endDate;
+  const startBoundary = parseIstDateBoundary(rawStartDate);
+  const endDateBoundary = parseIstDateBoundary(rawEndDate);
+
+  if (
+    startBoundary === null ||
+    endDateBoundary === null ||
+    (typeof rawStartDate === "string" &&
+      typeof rawEndDate === "string" &&
+      rawStartDate > rawEndDate)
+  ) {
+    res.status(400).json({ error: "Provide valid dates with startDate on or before endDate." });
+    return;
+  }
+
+  const conditions: SQL[] = [];
+  if (startBoundary) {
+    conditions.push(gte(flowArchivesTable.periodStart, startBoundary));
+  }
+  if (endDateBoundary) {
+    conditions.push(
+      lt(flowArchivesTable.periodStart, new Date(endDateBoundary.getTime() + DAY_MS)),
+    );
+  }
+
   const rows = await db
     .select()
     .from(flowArchivesTable)
+    .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(flowArchivesTable.createdAt));
   res.json(rows.map(serializeArchive));
 });

@@ -31,6 +31,7 @@ export * from './flowSearchResult';
 export * from './flowTrendPoint';
 export * from './getArchiveLogsLevel';
 export * from './getArchiveLogsParams';
+export * from './getArchivesParams';
 export * from './getAuditLogsParams';
 export * from './healthStatus';
 export * from './loginInput';

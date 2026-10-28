@@ -636,6 +636,21 @@ paths:
       operationId: getArchives
       tags: [archives]
       summary: List compressed flow archives
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          description: Include archive windows starting on or after this IST calendar date (YYYY-MM-DD).
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+        - name: endDate
+          in: query
+          required: false
+          description: Include archive windows starting on or before this IST calendar date (YYYY-MM-DD).
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
       responses:
         "200":
           description: Archives
@@ -645,6 +660,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/FlowArchive"
+        "400":
+          description: Invalid date filter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /archives/compress:
     post:
       operationId: runCompression

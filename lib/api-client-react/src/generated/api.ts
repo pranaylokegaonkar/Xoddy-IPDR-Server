@@ -38,6 +38,7 @@ import type {
   FlowSearchResult,
   FlowTrendPoint,
   GetArchiveLogsParams,
+  GetArchivesParams,
   GetAuditLogsParams,
   HealthStatus,
   LoginInput,
@@ -2526,20 +2527,27 @@ export const useMarkAllNotificationsRead = <TError = ErrorType<unknown>,
       return useMutation(getMarkAllNotificationsReadMutationOptions(options));
     }
 
-export const getGetArchivesUrl = () => {
+export const getGetArchivesUrl = (params?: GetArchivesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/archives`
+  return stringifiedParams.length > 0 ? `/api/archives?${stringifiedParams}` : `/api/archives`
 }
 
 /**
  * @summary List compressed flow archives
  */
-export const getArchives = async ( options?: RequestInit): Promise<FlowArchive[]> => {
+export const getArchives = async (params?: GetArchivesParams, options?: RequestInit): Promise<FlowArchive[]> => {
 
-  return customFetch<FlowArchive[]>(getGetArchivesUrl(),
+  return customFetch<FlowArchive[]>(getGetArchivesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -2552,23 +2560,23 @@ export const getArchives = async ( options?: RequestInit): Promise<FlowArchive[]
 
 
 
-export const getGetArchivesQueryKey = () => {
+export const getGetArchivesQueryKey = (params?: GetArchivesParams,) => {
     return [
-    `/api/archives`
+    `/api/archives`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetArchivesQueryOptions = <TData = Awaited<ReturnType<typeof getArchives>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchives>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetArchivesQueryOptions = <TData = Awaited<ReturnType<typeof getArchives>>, TError = ErrorType<Error>>(params?: GetArchivesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchives>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetArchivesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetArchivesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchives>>> = ({ signal }) => getArchives({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArchives>>> = ({ signal }) => getArchives(params, { signal, ...requestOptions });
 
 
 
@@ -2578,19 +2586,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetArchivesQueryResult = NonNullable<Awaited<ReturnType<typeof getArchives>>>
-export type GetArchivesQueryError = ErrorType<unknown>
+export type GetArchivesQueryError = ErrorType<Error>
 
 
 /**
  * @summary List compressed flow archives
  */
 
-export function useGetArchives<TData = Awaited<ReturnType<typeof getArchives>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchives>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetArchives<TData = Awaited<ReturnType<typeof getArchives>>, TError = ErrorType<Error>>(
+ params?: GetArchivesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArchives>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetArchivesQueryOptions(options)
+  const queryOptions = getGetArchivesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
