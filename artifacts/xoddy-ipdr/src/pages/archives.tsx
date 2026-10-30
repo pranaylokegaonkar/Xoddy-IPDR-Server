@@ -272,7 +272,6 @@ export default function Archives() {
           onEndDateChange={setEndDate}
           onNasIdChange={setNasId}
           isFetching={hasRequestedData && isFetching}
-          hasRequestedData={hasRequestedData}
           invalidDateRange={invalidDateRange}
           onShowData={handleShowData}
           hasPendingFilters={hasPendingFilters}
