@@ -8,6 +8,11 @@
 
 export interface DashboardStorage {
   /**
+     * Earliest flow start time still stored in flow_records, including archived originals awaiting cleanup. Null when no flow rows remain.
+     * @nullable
+     */
+  oldestFlowAt: Date | null;
+  /**
      * Sum of compressed archive file sizes, including imported archives; each archive counted once regardless of storage location.
      * @minimum 0
      */

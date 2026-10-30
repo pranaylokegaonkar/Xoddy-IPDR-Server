@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
+const flowDateFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Kolkata",
+  day: "2-digit", month: "short", year: "numeric",
+  hour: "2-digit", minute: "2-digit", hour12: false,
+});
+
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -157,6 +163,18 @@ export default function Dashboard() {
             value={isLoadingSummary ? null : formatNumber(summary?.flowsToday || 0)} 
             icon={Activity} 
             description={isLoadingSummary ? null : `${formatNumber(summary?.totalFlows || 0)} total retained`}
+            action={
+              <div className="ml-2" aria-live="polite">
+                <p className="text-xs text-muted-foreground">Oldest flow record</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">
+                  {storageQuery.isLoading ? "Loading…"
+                    : !storage ? "Unable to load"
+                      : storage.oldestFlowAt
+                        ? `${flowDateFormatter.format(new Date(storage.oldestFlowAt))} IST`
+                        : "No flow data"}
+                </p>
+              </div>
+            }
             trend="+12%"
             trendUp={true}
           />

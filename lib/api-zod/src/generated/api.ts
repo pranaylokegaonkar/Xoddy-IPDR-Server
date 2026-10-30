@@ -242,6 +242,7 @@ export const getDashboardStorageResponseCurrentBytesMin = 0;
 
 
 export const GetDashboardStorageResponse = zod.object({
+  "oldestFlowAt": zod.coerce.date().nullable().describe('Earliest flow start time still stored in flow_records, including archived originals awaiting cleanup. Null when no flow rows remain.'),
   "archiveBytes": zod.number().min(getDashboardStorageResponseArchiveBytesMin).describe('Sum of compressed archive file sizes, including imported archives; each archive counted once regardless of storage location.'),
   "currentBytes": zod.number().min(getDashboardStorageResponseCurrentBytesMin).describe('PostgreSQL allocated size of flow_records including indexes, TOAST and reusable space. Includes archived original rows still awaiting retention cleanup. Not network traffic bytes.')
 })

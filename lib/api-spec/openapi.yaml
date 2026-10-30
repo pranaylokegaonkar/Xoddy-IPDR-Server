@@ -1167,8 +1167,12 @@ components:
           enum: [resolved, pending, not_public, unavailable]
     DashboardStorage:
       type: object
-      required: [archiveBytes, currentBytes]
+      required: [archiveBytes, currentBytes, oldestFlowAt]
       properties:
+        oldestFlowAt:
+          type: [string, "null"]
+          format: date-time
+          description: Earliest flow start time still stored in flow_records, including archived originals awaiting cleanup. Null when no flow rows remain.
         archiveBytes:
           type: number
           minimum: 0

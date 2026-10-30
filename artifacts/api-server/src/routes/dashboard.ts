@@ -20,14 +20,21 @@ const cpuSampler = new CpuUsageSampler();
 router.get("/dashboard/storage", async (_req, res) => {
   // Only archive metadata is scanned. PostgreSQL relation sizing uses filesystem
   // metadata rather than scanning the growing live-flow table.
-  const [storage] = await db.select({
-    archiveBytes: sql<string>`coalesce(sum(${flowArchivesTable.compressedBytes}), 0)`,
-    currentBytes: sql<string>`pg_total_relation_size('flow_records'::regclass)`,
-  }).from(flowArchivesTable);
+  const [[storage], [oldest]] = await Promise.all([
+    db.select({
+      archiveBytes: sql<string>`coalesce(sum(${flowArchivesTable.compressedBytes}), 0)`,
+      currentBytes: sql<string>`pg_total_relation_size('flow_records'::regclass)`,
+    }).from(flowArchivesTable),
+    db.select({ startTime: flowRecordsTable.startTime })
+      .from(flowRecordsTable)
+      .orderBy(flowRecordsTable.startTime)
+      .limit(1),
+  ]);
   res.setHeader("Cache-Control", "no-store");
   res.json({
     archiveBytes: Number(storage.archiveBytes),
     currentBytes: Number(storage.currentBytes),
+    oldestFlowAt: oldest?.startTime.toISOString() ?? null,
   });
 });
 
